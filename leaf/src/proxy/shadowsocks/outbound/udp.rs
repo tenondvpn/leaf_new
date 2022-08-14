@@ -4,7 +4,8 @@ use rand::Rng;
 use async_trait::async_trait;
 use bytes::{BufMut, BytesMut};
 use log::*;
-
+use rand::thread_rng;
+use rand::distributions::Alphanumeric;
 use crate::{
     proxy::*,
     session::{Session, SocksAddr, SocksAddrWireType},
@@ -181,21 +182,59 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
 
         let ciphertext = self.dgram.encrypt(buf2).map_err(|_| shadow::crypto_err())?;
 
-        let mut buffer1 = BytesMut::with_capacity(92);
-        buffer1.put_u32(self.vpn_ip);
-        buffer1.put_u16(self.vpn_port);
-        buffer1.put_slice(self.pk_str[..].as_bytes());
-        buffer1.put_u8(25);
-        buffer1.put_u32(self.vpn_ip);
-        buffer1.put_u16(self.vpn_port);
-        buffer1.put_slice(self.ver[..].as_bytes());
-        let mut buffer = BytesMut::with_capacity(ciphertext.len() + buffer1.len());
-        buffer.put_slice(&buffer1);
-        buffer.put_slice(&ciphertext);
+        // let rng = rand::thread_rng();
+        if self.ver != "ios_5.2.3_officiall" {
+            let n2: u8 = thread_rng().gen_range(0..64);
+            let all_len = 92 + n2 + 1;
+            let mut buffer1 = BytesMut::with_capacity(all_len as usize);
+            buffer1.put_u8(n2);
+            let rand_string: String = thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(n2 as usize)
+                .map(char::from)
+                .collect();
+            buffer1.put_slice(rand_string[..].as_bytes());
+    
+            buffer1.put_u32(self.vpn_ip);
+            buffer1.put_u16(self.vpn_port);
+            buffer1.put_slice(self.pk_str[..].as_bytes());
+            buffer1.put_u8(25);
+            buffer1.put_u32(self.vpn_ip);
+            buffer1.put_u16(self.vpn_port);
+            buffer1.put_slice(self.ver[..].as_bytes());
+            let mut buffer = BytesMut::with_capacity(ciphertext.len() + buffer1.len());
+            buffer.put_slice(&buffer1);
+            buffer.put_slice(&ciphertext);
+            let mut i = 1;
+            let pos: usize = n2 as usize / 2;
+            while i != buffer.len() {
+                if i == pos {
+                    i=i+1;
+                    continue;
+                }
 
-        match self.send_half.send_to(&mut buffer, &self.server_addr).await {
-            Ok(_) => Ok(buf.len()),
-            Err(err) => Err(err),
+                buffer[i] = buffer[i] ^ buffer[pos];
+                i = i + 1;
+            }
+
+            match self.send_half.send_to(&mut buffer, &self.server_addr).await {
+                Ok(_) => Ok(buf.len()),
+                Err(err) => Err(err),
+            }
+        } else {
+            let mut buffer1 = BytesMut::with_capacity(92);
+            buffer1.put_u32(self.vpn_ip);
+            buffer1.put_u16(self.vpn_port);
+            buffer1.put_slice(self.pk_str[..].as_bytes());
+            buffer1.put_u8(19);
+            buffer1.put_slice(self.ver[..].as_bytes());
+            let mut buffer = BytesMut::with_capacity(ciphertext.len() + buffer1.len());
+            buffer.put_slice(&buffer1);
+            buffer.put_slice(&ciphertext);
+            match self.send_half.send_to(&mut buffer, &self.server_addr).await {
+                Ok(_) => Ok(buf.len()),
+                Err(err) => Err(err),
+            }
         }
     }
 }
