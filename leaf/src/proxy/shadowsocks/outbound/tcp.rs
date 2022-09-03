@@ -1,6 +1,8 @@
 use std::io;
 extern crate rand;
 use rand::Rng;
+use rand::thread_rng;
+use rand::distributions::Alphanumeric;
 use async_trait::async_trait;
 
 use tokio::io::AsyncWriteExt;
@@ -53,14 +55,44 @@ impl TcpOutboundHandler for Handler {
         let pk_str = vec[3].to_string();
         let ver = vec[4].to_string();
 
-        let mut buffer1 = BytesMut::with_capacity(92);
+        let n2: u8 = thread_rng().gen_range(7..64);
+        let all_len = 92 + n2 + 1;
+        let mut buffer1 = BytesMut::with_capacity(all_len as usize);
+
         buffer1.put_u32(vpn_ip);
         buffer1.put_u16(vpn_port);
+
+        
+        buffer1.put_u8(n2);
+        let rand_string: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(n2 as usize)
+            .map(char::from)
+            .collect();
+        buffer1.put_slice(rand_string[..].as_bytes());
+
         let pk_str = String::from(pk_str.clone());
         buffer1.put_slice(pk_str[..].as_bytes());
         buffer1.put_u8(19);
         let ver_str = String::from(ver.clone());
         buffer1.put_slice(ver_str[..].as_bytes());
+
+        let mut i = 0;
+        let pos: usize = 6 + (n2 as usize / 2);
+        while i != buffer1.len() {
+            if i == pos || i == 6 {
+                i = i + 1;
+                continue;
+            }
+
+            buffer1[i] = buffer1[i] ^ buffer1[pos];
+            i = i + 1;
+        }
+
+        if buffer1.len() != all_len as usize {
+            panic!("this is a terrible mistake!");
+        }
+
         src_stream.write_all(&buffer1).await?;
 
         let mut stream = ShadowedStream::new(src_stream, &self.cipher, &tmp_ps)?;
