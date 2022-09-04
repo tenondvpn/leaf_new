@@ -197,7 +197,10 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         buffer1.put_slice(rand_string[..].as_bytes());
 
         buffer1.put_slice(self.pk_str[..].as_bytes());
-        buffer1.put_u8(19);
+        // udp add more addr
+        buffer1.put_u8(25);
+        buffer1.put_u32(self.vpn_ip);
+        buffer1.put_u16(self.vpn_port);
         buffer1.put_slice(self.ver[..].as_bytes());
         let mut buffer = BytesMut::with_capacity(ciphertext.len() + buffer1.len());
         buffer.put_slice(&buffer1);
