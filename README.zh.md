@@ -662,7 +662,7 @@ HTTP2 传输，一般需要配合 tls 一起使用，tls 需要配置 h2 作为 
     "protocol": "shadowsocks",
     "settings": {
         "address": "x.x.x.x",
-        "method": "chacha20-ietf-poly1305",
+        "method": "",
         "password": "123456",
         "port": 8389
     },
