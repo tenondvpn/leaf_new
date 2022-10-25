@@ -182,7 +182,7 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
 
         let ciphertext = self.dgram.encrypt(buf2).map_err(|_| shadow::crypto_err())?;
 
-        let n2: u8 = thread_rng().gen_range(0..64);
+        let n2: u8 = thread_rng().gen_range(6..64);
         let all_len = 98 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
         buffer1.put_u32(self.vpn_ip);
