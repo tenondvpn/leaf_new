@@ -203,8 +203,11 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         let n2: u8 = thread_rng().gen_range(6..64);
         let mut all_len = 98 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
+        let mut head_size = 6;
         if (self.ex_route_ip != 0) {
             all_len += 6;
+            head_size += 6;
+            buffer1 = BytesMut::with_capacity(all_len as usize);
             buffer1.put_u32(self.ex_route_ip);
             buffer1.put_u16(self.ex_route_port);
         }
@@ -230,9 +233,9 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         buffer.put_slice(&buffer1);
         buffer.put_slice(&ciphertext); 
         let mut i = 0;
-        let pos: usize = 6 + (n2 as usize / 2);
+        let pos: usize = head_size + (n2 as usize / 2);
         while i != buffer.len() {
-            if i == pos || i == 6 {
+            if i == pos || i == head_size {
                 i=i+1;
                 continue;
             }
