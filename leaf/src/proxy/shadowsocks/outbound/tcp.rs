@@ -59,10 +59,16 @@ impl TcpOutboundHandler for Handler {
         let mut all_len = 92 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
 
+        let mut head_size = 6;
         if (vec.len() >= 7) {
-            all_len += 6;
-            buffer1.put_u32(vec[5].parse::<u32>().unwrap());
-            buffer1.put_u16(vec[6].parse::<u16>().unwrap());
+            let ex_r_ip = vec[5].parse::<u32>().unwrap();
+            if (ex_r_ip != 0) {
+                all_len += 6;
+                head_size += 6;
+                buffer1 = BytesMut::with_capacity(all_len as usize);
+                buffer1.put_u32(ex_r_ip);
+                buffer1.put_u16(vec[6].parse::<u16>().unwrap());
+            }
         }
 
         buffer1.put_u32(vpn_ip);
@@ -83,9 +89,9 @@ impl TcpOutboundHandler for Handler {
         buffer1.put_slice(ver_str[..].as_bytes());
 
         let mut i = 0;
-        let pos: usize = 6 + (n2 as usize / 2);
+        let pos: usize = head_size + (n2 as usize / 2);
         while i != buffer1.len() {
-            if i == pos || i == 6 {
+            if i == pos || i == head_size {
                 i = i + 1;
                 continue;
             }
