@@ -56,7 +56,7 @@ impl TcpOutboundHandler for Handler {
         let ver = vec[4].to_string();
 
         let n2: u8 = thread_rng().gen_range(7..64);
-        let all_len = 92 + n2 + 1;
+        let mut all_len = 92 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
 
         if (vec.len() >= 7) {
