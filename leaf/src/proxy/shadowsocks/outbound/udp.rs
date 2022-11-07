@@ -75,8 +75,8 @@ impl UdpOutboundHandler for Handler {
         let tmp_vpn_port = vec[2].parse::<u16>().unwrap();
         let tmp_pk = vec[3];
         let tmp_ver = vec[4];
-        var tmp_ex_route_ip = 0;
-        var tmp_ex_route_port = 0;
+        let mut tmp_ex_route_ip = 0;
+        let mut tmp_ex_route_port = 0;
         if (vec.len() >= 7) {
             tmp_ex_route_ip = vec[5].parse::<u32>().unwrap();
             tmp_ex_route_port = vec[6].parse::<u16>().unwrap();
@@ -201,7 +201,7 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         let ciphertext = self.dgram.encrypt(buf2).map_err(|_| shadow::crypto_err())?;
 
         let n2: u8 = thread_rng().gen_range(6..64);
-        let all_len = 98 + n2 + 1;
+        let mut all_len = 98 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
         if (self.ex_route_ip != 0) {
             all_len += 6;
