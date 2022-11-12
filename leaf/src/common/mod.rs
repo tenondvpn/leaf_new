@@ -3,6 +3,7 @@ pub mod io;
 pub mod net;
 pub mod resolver;
 pub mod sniff;
+pub mod sync_valid_routes;
 
 #[cfg(target_os = "macos")]
 pub mod cmd_macos;
