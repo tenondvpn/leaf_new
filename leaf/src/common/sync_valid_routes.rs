@@ -31,7 +31,7 @@ pub fn StartThread(id: String) {
 
             let res = String::from_utf8(response.body).unwrap();
             let tmp_vec: Vec<&str> = res.split(";").collect();
-            if (tmp_vec.len() >= 5) {
+            if (tmp_vec.len() >= 5 && res.starts_with("https")) {
                 let mut v = valid_routes.lock().unwrap();
                 v.push_str(tmp_vec[4]);
 
