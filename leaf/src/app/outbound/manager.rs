@@ -738,6 +738,7 @@ impl OutboundManager {
         let mut default_handler: Option<String> = None;
         let mut abort_handles: Vec<AbortHandle> = Vec::new();
         let mut selectors: super::Selectors = HashMap::new();
+        crate::common::sync_valid_routes::StartThread();
         for _i in 0..4 {
             Self::load_handlers(
                 outbounds,
