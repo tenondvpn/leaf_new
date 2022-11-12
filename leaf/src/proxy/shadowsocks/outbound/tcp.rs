@@ -110,6 +110,14 @@ impl TcpOutboundHandler for Handler {
                         buffer1.put_u16(port);
                     }
                 }
+
+                if (head_size == 6) {
+                    all_len += 6;
+                    head_size += 6;
+                    buffer1 = BytesMut::with_capacity(all_len as usize);
+                    buffer1.put_u32(ex_r_ip);
+                    buffer1.put_u16(vec[6].parse::<u16>().unwrap());
+                }
             }
         }
 
