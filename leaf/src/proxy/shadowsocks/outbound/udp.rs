@@ -7,12 +7,18 @@ use crate::common;
 use log::*;
 use rand::thread_rng;
 use rand::distributions::Alphanumeric;
+use std::sync::Mutex;
+use lazy_static::lazy_static;
 use crate::{
     proxy::*,
     session::{Session, SocksAddr, SocksAddrWireType},
 };
 
 use super::shadow::{self, ShadowedDatagram};
+
+lazy_static! {
+    static ref rand_dynamic_index: Mutex<usize> = Mutex::new(0);
+}
 
 pub struct Handler {
     pub address: String,
@@ -39,8 +45,12 @@ impl UdpOutboundHandler for Handler {
             let route_vec: Vec<&str> = test_str.split(",").collect();
             if (route_vec.len() >= 2) {
                 let mut rng = rand::thread_rng();
-                let rand_idx = rng.gen_range(0..route_vec.len());
-                let ip_port = route_vec[rand_idx].to_string();
+                let mut tmp_rand_dynamic_index = rand_dynamic_index.lock().unwrap();
+                if (*tmp_rand_dynamic_index >= route_vec.len()) {
+                    *tmp_rand_dynamic_index = rng.gen_range(0..route_vec.len());
+                }
+                
+                let ip_port = route_vec[*tmp_rand_dynamic_index].to_string();
                 let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
                 if (ip_port_vec.len() >= 2) {
                     address = ip_port_vec[0].to_string();
@@ -95,8 +105,12 @@ impl UdpOutboundHandler for Handler {
             let route_vec: Vec<&str> = test_str.split(",").collect();
             if (route_vec.len() >= 2) {
                 let mut rng = rand::thread_rng();
-                let rand_idx = rng.gen_range(0..route_vec.len());
-                let ip_port = route_vec[rand_idx].to_string();
+                let mut tmp_rand_dynamic_index = rand_dynamic_index.lock().unwrap();
+                if (*tmp_rand_dynamic_index >= route_vec.len()) {
+                    *tmp_rand_dynamic_index = rng.gen_range(0..route_vec.len());
+                }
+                
+                let ip_port = route_vec[*tmp_rand_dynamic_index].to_string();
                 let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
                 if (ip_port_vec.len() >= 2) {
                     address = ip_port_vec[0].to_string();
@@ -276,8 +290,12 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
             let route_vec: Vec<&str> = test_str.split(",").collect();
             if (route_vec.len() >= 2) {
                 let mut rng = rand::thread_rng();
-                let rand_idx = rng.gen_range(0..route_vec.len());
-                let ip_port = route_vec[rand_idx].to_string();
+                let mut tmp_rand_dynamic_index = rand_dynamic_index.lock().unwrap();
+                if (*tmp_rand_dynamic_index >= route_vec.len()) {
+                    *tmp_rand_dynamic_index = rng.gen_range(0..route_vec.len());
+                }
+                
+                let ip_port = route_vec[*tmp_rand_dynamic_index].to_string();
                 let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
                 if (ip_port_vec.len() >= 2) {
                     let tmp_ip = ip_port_vec[0].to_string();
