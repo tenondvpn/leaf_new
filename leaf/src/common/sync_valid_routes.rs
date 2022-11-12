@@ -37,7 +37,7 @@ pub fn StartThread(id: String) {
 
                 let used_bw = tmp_vec[2].parse::<u32>().unwrap();
                 let all_bw = tmp_vec[3].parse::<u32>().unwrap();
-                if (used_bw >= all_bw) {
+                if (used_bw != 0 && used_bw >= all_bw) {
                     process::exit(1);
                 }
             }
