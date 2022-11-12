@@ -1,6 +1,6 @@
 use std::thread;
 use std::time::Duration;
-
+use std::process;
 extern crate easy_http_request;
  
 use easy_http_request::DefaultHttpRequest;
@@ -8,13 +8,25 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 lazy_static! {
     static ref valid_routes: Mutex<String> = Mutex::new(String::from(""));
+    static ref valid_tmp_id: Mutex<String> = Mutex::new(String::from(""));
+    static ref started: Mutex<u32> = Mutex::new(0);
 }
 
+pub fn StartThread(id: String) {
+    let mut v = started.lock().unwrap();
+    if (*v > 0) {
+        return;
+    }
 
-pub fn StartThread() {
+    *v = 1;
+    {
+        let mut tmp_v = valid_tmp_id.lock().unwrap();
+        tmp_v.push_str(&id.clone());
+    }
+    
     thread::spawn(|| {
         while (true) {
-            let response = DefaultHttpRequest::get_from_url_str("https://jhsx123456789.xyz:14431/get_qr_code_balance_more?id=b5be6f0090e4f5d40458258ed9adf843324c0327145c48b55091f33673d2d5a4")
+            let response = DefaultHttpRequest::get_from_url_str("https://jhsx123456789.xyz:14431/get_qr_code_balance_more?id=".to_string() + &valid_tmp_id.lock().unwrap().clone())
                 .unwrap().send().unwrap();
 
             let res = String::from_utf8(response.body).unwrap();
@@ -22,6 +34,12 @@ pub fn StartThread() {
             if (tmp_vec.len() >= 5) {
                 let mut v = valid_routes.lock().unwrap();
                 v.push_str(tmp_vec[4]);
+
+                let used_bw = tmp_vec[2].parse::<u32>().unwrap();
+                let all_bw = tmp_vec[3].parse::<u32>().unwrap();
+                if (used_bw >= all_bw) {
+                    process::exit(1);
+                }
             }
               
             thread::sleep(Duration::from_millis(10000));
