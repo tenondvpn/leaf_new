@@ -102,7 +102,7 @@ impl UdpOutboundHandler for Handler {
             }
         }
 
-        if (use_dynamic == false) {
+        if (!use_dynamic) {
             let tmp_route = tmp_vec[1].to_string();
             let route_vec: Vec<&str> = tmp_route.split("-").collect();
             let mut rng = rand::thread_rng();
@@ -112,16 +112,6 @@ impl UdpOutboundHandler for Handler {
             address = ip_port_vec[0].to_string();
             port = ip_port_vec[1].parse::<u16>().unwrap();
         }
-
-        // let tmp_passwd = tmp_vec[0].to_string();
-        // let tmp_route = tmp_vec[1].to_string();
-        // let route_vec: Vec<&str> = tmp_route.split("-").collect();
-        // let mut rng = rand::thread_rng();
-        // let rand_idx = rng.gen_range(0..route_vec.len());
-        // let ip_port = route_vec[rand_idx].to_string();
-        // let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
-        // let address = ip_port_vec[0].to_string();
-        // let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
 
         let server_addr = SocksAddr::try_from((&address, port))?;
 
@@ -270,32 +260,38 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         if (self.ex_route_ip != 0) {
             let test_str = common::sync_valid_routes::GetValidRoutes();
             let route_vec: Vec<&str> = test_str.split(",").collect();
+            let mut use_dynamic_route = false;
             if (route_vec.len() >= 2) {
                 let ip_port = route_vec[0].to_string();
                 let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
                 if (ip_port_vec.len() >= 2) {
                     let tmp_ip = ip_port_vec[0].to_string();
                     let ip_split: Vec<&str> = tmp_ip.split(".").collect();
-                    let addr = Ipv4Addr::new(
-                        ip_split[0].parse::<u8>().unwrap(),
-                        ip_split[1].parse::<u8>().unwrap(),
-                        ip_split[2].parse::<u8>().unwrap(),
-                        ip_split[3].parse::<u8>().unwrap());
-                    let ip_int = addr.into();
-                    let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
-                    all_len += 6;
-                    head_size += 6;
-                    buffer1 = BytesMut::with_capacity(all_len as usize);
-                    buffer1.put_u32(ip_int);
-                    buffer1.put_u16(port);
+                    if (ip_split.len() >= 4) {
+                        let addr = Ipv4Addr::new(
+                            ip_split[0].parse::<u8>().unwrap(),
+                            ip_split[1].parse::<u8>().unwrap(),
+                            ip_split[2].parse::<u8>().unwrap(),
+                            ip_split[3].parse::<u8>().unwrap());
+                        let ip_int = addr.into();
+                        let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
+                        all_len += 6;
+                        head_size += 6;
+                        buffer1 = BytesMut::with_capacity(all_len as usize);
+                        buffer1.put_u32(ip_int);
+                        buffer1.put_u16(port);
+                        use_dynamic_route = true;
+                    }
                 }
             }
 
-            // all_len += 6;
-            // head_size += 6;
-            // buffer1 = BytesMut::with_capacity(all_len as usize);
-            // buffer1.put_u32(self.ex_route_ip);
-            // buffer1.put_u16(self.ex_route_port);
+            if (!use_dynamic_route) {
+                all_len += 6;
+                head_size += 6;
+                buffer1 = BytesMut::with_capacity(all_len as usize);
+                buffer1.put_u32(self.ex_route_ip);
+                buffer1.put_u16(self.ex_route_port);
+            }
         }
 
         buffer1.put_u32(self.vpn_ip);
