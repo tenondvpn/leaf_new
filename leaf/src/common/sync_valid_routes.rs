@@ -13,39 +13,38 @@ lazy_static! {
 }
 
 pub fn StartThread(id: String) {
-    return;
-    // let mut v = started.lock().unwrap();
-    // if (*v > 0) {
-    //     return;
-    // }
+    let mut v = started.lock().unwrap();
+    if (*v > 0) {
+        return;
+    }
 
-    // *v = 1;
-    // {
-    //     let mut tmp_v = valid_tmp_id.lock().unwrap();
-    //     tmp_v.push_str(&id.clone());
-    // }
+    *v = 1;
+    {
+        let mut tmp_v = valid_tmp_id.lock().unwrap();
+        tmp_v.push_str(&id.clone());
+    }
     
-    // thread::spawn(|| {
-    //     while (true) {
-    //         let response = DefaultHttpRequest::get_from_url_str("https://jhsx123456789.xyz:14431/get_qr_code_balance_more?id=".to_string() + &valid_tmp_id.lock().unwrap().clone())
-    //             .unwrap().send().unwrap();
+    thread::spawn(|| {
+        while (true) {
+            let response = DefaultHttpRequest::get_from_url_str("https://jhsx123456789.xyz:14431/get_qr_code_balance_more?id=".to_string() + &valid_tmp_id.lock().unwrap().clone())
+                .unwrap().send().unwrap();
 
-    //         let res = String::from_utf8(response.body).unwrap();
-    //         let tmp_vec: Vec<&str> = res.split(";").collect();
-    //         if (tmp_vec.len() >= 5 && res.starts_with("https")) {
-    //             let mut v = valid_routes.lock().unwrap();
-    //             v.push_str(tmp_vec[4]);
+            let res = String::from_utf8(response.body).unwrap();
+            let tmp_vec: Vec<&str> = res.split(";").collect();
+            if (tmp_vec.len() >= 5 && res.starts_with("https")) {
+                let mut v = valid_routes.lock().unwrap();
+                v.push_str(tmp_vec[4]);
 
-    //             let used_bw = tmp_vec[2].parse::<u32>().unwrap();
-    //             let all_bw = tmp_vec[3].parse::<u32>().unwrap();
-    //             if (used_bw != 0 && used_bw >= all_bw) {
-    //                 process::exit(1);
-    //             }
-    //         }
+                let used_bw = tmp_vec[2].parse::<u32>().unwrap();
+                let all_bw = tmp_vec[3].parse::<u32>().unwrap();
+                if (used_bw != 0 && used_bw >= all_bw) {
+                    process::exit(1);
+                }
+            }
               
-    //         thread::sleep(Duration::from_millis(10000));
-    //     }
-    // });
+            thread::sleep(Duration::from_millis(10000));
+        }
+    });
 }
 
 pub fn GetValidRoutes() -> String {
