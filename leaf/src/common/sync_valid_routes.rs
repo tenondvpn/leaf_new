@@ -1,6 +1,7 @@
 use std::thread;
 use std::time::Duration;
 use std::process;
+use std::panic;
 extern crate easy_http_request;
  
 use easy_http_request::DefaultHttpRequest;
@@ -26,22 +27,31 @@ pub fn StartThread(id: String) {
     
     thread::spawn(|| {
         while (true) {
-            let response = DefaultHttpRequest::get_from_url_str("https://jhsx123456789.xyz:14431/get_qr_code_balance_more?id=".to_string() + &valid_tmp_id.lock().unwrap().clone())
-                .unwrap().send().unwrap();
+            let response = DefaultHttpRequest::get_from_url_str(
+                "https://jhsx123456789.xyz:14431/get_qr_code_balance_more?id=".to_string() +
+                &valid_tmp_id.lock().unwrap().clone())
+                .unwrap().send();
 
-            let res = String::from_utf8(response.body).unwrap();
-            let tmp_vec: Vec<&str> = res.split(";").collect();
-            if (tmp_vec.len() >= 5 && res.starts_with("https")) {
-                let mut v = valid_routes.lock().unwrap();
-                v.push_str(tmp_vec[4]);
+            match response {
+                Ok(response)=> {
+                    let res = String::from_utf8(response.body).unwrap();
+                    let tmp_vec: Vec<&str> = res.split(";").collect();
+                    if (tmp_vec.len() >= 5 && res.starts_with("https")) {
+                        let mut v = valid_routes.lock().unwrap();
+                        v.push_str(tmp_vec[4]);
 
-                let used_bw = tmp_vec[2].parse::<u32>().unwrap();
-                let all_bw = tmp_vec[3].parse::<u32>().unwrap();
-                if (used_bw != 0 && used_bw >= all_bw) {
-                    process::exit(1);
+                        let used_bw = tmp_vec[2].parse::<u32>().unwrap();
+                        let all_bw = tmp_vec[3].parse::<u32>().unwrap();
+                        if (used_bw != 0 && used_bw >= all_bw) {
+                            process::exit(1);
+                        }
+                    }
+                },
+                Err(e)=> {
+                    println!("file not found \n{:?}",e);   // 处理错误
                 }
             }
-              
+                
             thread::sleep(Duration::from_millis(10000));
         }
     });
