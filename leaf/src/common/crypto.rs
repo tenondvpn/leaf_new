@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
+use bytes::BytesMut;
 
 pub trait Cipher<N>: Sync + Send + Unpin
-where
-    N: NonceSequence,
+    where
+        N: NonceSequence,
 {
     type Enc;
     type Dec;
@@ -26,14 +27,14 @@ pub trait SizedCipher {
 
 pub trait Encryptor: Sync + Send + Unpin {
     fn encrypt<InOut>(&mut self, in_out: &mut InOut) -> Result<()>
-    where
-        InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>;
+        where
+            InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>;
 }
 
 pub trait Decryptor: Sync + Send + Unpin {
     fn decrypt<InOut>(&mut self, in_out: &mut InOut) -> Result<()>
-    where
-        InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>;
+        where
+            InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>;
 }
 
 pub trait NonceSequence: Sync + Send + Unpin {
@@ -53,12 +54,14 @@ pub mod aead {
             m.insert("chacha20-ietf-poly1305", symm::Cipher::chacha20_poly1305());
             m.insert("aes-256-gcm", symm::Cipher::aes_256_gcm());
             m.insert("aes-128-gcm", symm::Cipher::aes_128_gcm());
+            m.insert("sm4_cbc", symm::Cipher::sm4_cbc());
             m
         };
     }
 
     pub struct AeadCipher {
         cipher: symm::Cipher,
+        cipher_name: String,
     }
 
     impl AeadCipher {
@@ -67,13 +70,16 @@ pub mod aead {
                 Some(v) => v,
                 None => return Err(anyhow!("unsupported cipher: {}", cipher)),
             };
-            Ok(AeadCipher { cipher: *alg })
+            Ok(AeadCipher {
+                cipher: *alg,
+                cipher_name: cipher.to_string(),
+            })
         }
     }
 
     impl<N> Cipher<N> for AeadCipher
-    where
-        N: 'static + NonceSequence,
+        where
+            N: 'static + NonceSequence,
     {
         type Enc = AeadEncryptor<N>;
         type Dec = AeadDecryptor<N>;
@@ -84,6 +90,7 @@ pub mod aead {
                 key.to_vec(),
                 nonce,
                 self.tag_len(),
+                self.cipher_name.clone(),
             ))
         }
 
@@ -93,6 +100,7 @@ pub mod aead {
                 key.to_vec(),
                 nonce,
                 self.tag_len(),
+                self.cipher_name.clone(),
             ))
         }
     }
@@ -109,6 +117,7 @@ pub mod aead {
     }
 
     pub struct AeadEncryptor<N> {
+        cipher_name: String,
         cipher: symm::Cipher,
         key: Vec<u8>,
         nonce: N,
@@ -116,11 +125,12 @@ pub mod aead {
     }
 
     impl<N> AeadEncryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
-        pub fn new(cipher: symm::Cipher, key: Vec<u8>, nonce: N, tag_len: usize) -> Self {
+        pub fn new(cipher: symm::Cipher, key: Vec<u8>, nonce: N, tag_len: usize, cipher_name: String) -> Self {
             AeadEncryptor {
+                cipher_name,
                 cipher,
                 key,
                 nonce,
@@ -130,12 +140,12 @@ pub mod aead {
     }
 
     impl<N> Encryptor for AeadEncryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
         fn encrypt<InOut>(&mut self, in_out: &mut InOut) -> Result<()>
-        where
-            InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
+            where
+                InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
         {
             let nonce = self
                 .nonce
@@ -143,22 +153,33 @@ pub mod aead {
                 .map_err(|e| anyhow!("encrypt failed: {}", e))?;
             let mut tag = vec![0u8; self.tag_len];
             // TODO in-place?
-            let ciphertext = symm::encrypt_aead(
-                self.cipher,
-                &self.key,
-                Some(&nonce),
-                &[],
-                in_out.as_ref(),
-                &mut tag,
-            )
-            .map_err(|e| anyhow!("encrypt failed: {}", e))?;
-            (&mut in_out.as_mut()[..ciphertext.len()]).copy_from_slice(&ciphertext);
-            in_out.extend(&tag);
+            if self.cipher_name.eq("sm4_cbc") {
+                let ciphertext =  symm::encrypt(self.cipher, &self.key, Some(&nonce), in_out.as_ref())
+                    .map_err(|e| anyhow!("use {} encrypt failed: {}",self.cipher_name, e))?;
+                // 扩展 in_out 的容量来适应密文长度
+                let extend_size = ciphertext.len() - in_out.as_mut().len();
+                if extend_size > 0 {
+                    in_out.extend(&vec![0u8; extend_size]);
+                }
+                (&mut in_out.as_mut()[..ciphertext.len()]).copy_from_slice(&ciphertext);
+            } else {
+                let ciphertext = symm::encrypt_aead(
+                    self.cipher,
+                    &self.key,
+                    Some(&nonce),
+                    &[],
+                    in_out.as_ref(),
+                    &mut tag,
+                ).map_err(|e| anyhow!("encrypt failed: {}", e))?;
+                (&mut in_out.as_mut()[..ciphertext.len()]).copy_from_slice(&ciphertext);
+                in_out.extend(&tag);
+            };
             Ok(())
         }
     }
 
     pub struct AeadDecryptor<N> {
+        cipher_name: String,
         cipher: symm::Cipher,
         key: Vec<u8>,
         nonce: N,
@@ -166,11 +187,12 @@ pub mod aead {
     }
 
     impl<N> AeadDecryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
-        pub fn new(cipher: symm::Cipher, key: Vec<u8>, nonce: N, tag_len: usize) -> Self {
+        pub fn new(cipher: symm::Cipher, key: Vec<u8>, nonce: N, tag_len: usize, cipher_name: String) -> Self {
             AeadDecryptor {
+                cipher_name,
                 cipher,
                 key,
                 nonce,
@@ -180,24 +202,30 @@ pub mod aead {
     }
 
     impl<N> Decryptor for AeadDecryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
         fn decrypt<InOut>(&mut self, in_out: &mut InOut) -> Result<()>
-        where
-            InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
+            where
+                InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
         {
             let nonce = self
                 .nonce
                 .advance()
                 .map_err(|e| anyhow!("decrypt failed: {}", e))?;
-            let in_out_ref = in_out.as_ref();
-            let data = &in_out_ref[..in_out_ref.len() - self.tag_len];
-            let tag = &in_out_ref[in_out_ref.len() - self.tag_len..];
             // TODO in-place?
-            let plaintext =
+            let plaintext = if self.cipher_name.eq("sm4_cbc") {
+                symm::decrypt(self.cipher, &self.key, Some(&nonce), in_out.as_ref()).map_err(
+                    |e| anyhow!("use {} decrypt failed: {}", self.cipher_name, e))?
+            } else {
+                let in_out_ref = in_out.as_ref();
+                let data = &in_out_ref[..in_out_ref.len() - self.tag_len];
+                let tag = &in_out_ref[in_out_ref.len() - self.tag_len..];
                 symm::decrypt_aead(self.cipher, &self.key, Some(&nonce), &[], data, tag)
-                    .map_err(|e| anyhow!("decrypt failed: {}", e))?;
+                    .map_err(|e| anyhow!("decrypt failed: {}", e))?
+            };
+
+
             (&mut in_out.as_mut()[..plaintext.len()]).copy_from_slice(&plaintext);
             Ok(())
         }
@@ -236,8 +264,8 @@ pub mod aead {
     }
 
     impl<N> Cipher<N> for AeadCipher
-    where
-        N: 'static + NonceSequence,
+        where
+            N: 'static + NonceSequence,
     {
         type Enc = AeadEncryptor<N>;
         type Dec = AeadDecryptor<N>;
@@ -279,8 +307,8 @@ pub mod aead {
     }
 
     impl<N> AeadEncryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
         pub fn new(enc: LessSafeKey, nonce: N) -> Self {
             AeadEncryptor { enc, nonce }
@@ -288,12 +316,12 @@ pub mod aead {
     }
 
     impl<N> Encryptor for AeadEncryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
         fn encrypt<InOut>(&mut self, in_out: &mut InOut) -> Result<()>
-        where
-            InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
+            where
+                InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
         {
             let nonce = self
                 .nonce
@@ -314,8 +342,8 @@ pub mod aead {
     }
 
     impl<N> AeadDecryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
         pub fn new(enc: LessSafeKey, nonce: N) -> Self {
             AeadDecryptor { enc, nonce }
@@ -323,12 +351,12 @@ pub mod aead {
     }
 
     impl<N> Decryptor for AeadDecryptor<N>
-    where
-        N: NonceSequence,
+        where
+            N: NonceSequence,
     {
         fn decrypt<InOut>(&mut self, in_out: &mut InOut) -> Result<()>
-        where
-            InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
+            where
+                InOut: AsRef<[u8]> + AsMut<[u8]> + for<'in_out> Extend<&'in_out u8>,
         {
             let nonce = self
                 .nonce
@@ -349,7 +377,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[cfg(any(feature = "ring-aead", feature = "openssl-aead"))]
+    #[cfg(any(feature = "openssl-aead"))]
     fn test_aead_enc_dec() {
         struct ShadowsocksNonceSequence(Vec<u8>);
 
@@ -379,20 +407,25 @@ mod tests {
             }
         }
         let plaintext = b"Hello, world!";
-        let cipher = aead::AeadCipher::new("chacha20-poly1305").unwrap();
-        let key = vec![0u8; cipher.key_len()];
 
-        let mut buf = Vec::new();
-        buf.extend_from_slice(plaintext);
+        for method_name in ["chacha20-poly1305", "chacha20-ietf-poly1305", "aes-256-gcm", "aes-128-gcm", "sm4_cbc"].iter() {
+            let cipher = aead::AeadCipher::new(method_name).unwrap();
+            let key = vec![0u8; cipher.key_len()];
 
-        let nonce = ShadowsocksNonceSequence::new(cipher.nonce_len());
-        let mut enc = cipher.encryptor(&key, nonce).unwrap();
-        enc.encrypt(&mut buf).unwrap();
+            let mut buf = Vec::new();
+            buf.extend_from_slice(plaintext);
 
-        let dec_nonce = ShadowsocksNonceSequence::new(cipher.nonce_len());
-        let mut dec = cipher.decryptor(&key, dec_nonce).unwrap();
-        dec.decrypt(&mut buf).unwrap();
+            let nonce = ShadowsocksNonceSequence::new(cipher.nonce_len());
+            let mut enc = cipher.encryptor(&key, nonce).unwrap();
+            enc.encrypt(&mut buf).unwrap();
 
-        assert_eq!(&buf[..plaintext.len()], plaintext);
+            let dec_nonce = ShadowsocksNonceSequence::new(cipher.nonce_len());
+            let mut dec = cipher.decryptor(&key, dec_nonce).unwrap();
+            dec.decrypt(&mut buf).unwrap();
+
+            assert_eq!(&buf[..plaintext.len()], plaintext);
+            println!("{} success", method_name);
+        }
+
     }
 }
