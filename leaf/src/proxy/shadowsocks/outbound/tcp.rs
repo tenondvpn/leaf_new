@@ -14,12 +14,12 @@ use crate::{
     session::{Session, SocksAddrWireType},
 };
 
-pub struct Handler {
+pub struct mut Handler {
     pub address: String,
     pub port: u16,
     pub cipher: String,
     pub password: String,
-    pub mut use_dynamic: bool,
+    pub use_dynamic: bool,
 }
 
 #[async_trait]
