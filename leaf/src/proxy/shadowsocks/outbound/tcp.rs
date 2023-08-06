@@ -19,7 +19,7 @@ pub struct Handler {
     pub port: u16,
     pub cipher: String,
     pub password: String,
-    pub use_dynamic: bool mut,
+    pub mut use_dynamic: bool,
 }
 
 #[async_trait]
