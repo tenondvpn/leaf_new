@@ -33,9 +33,7 @@ impl TcpOutboundHandler for Handler {
         let mut address = "".to_string();
         let mut port: u16 = 0;
         if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() != 0) {
-            let ip_uint = vec[5].parse::<u32>().unwrap();
-            let addr = Ipv4Addr::from(ip_uint);
-            address = addr.to_string();
+            address = vec[5].to_string();
             port = vec[6].parse::<u16>().unwrap();
         } else {
             let test_str = common::sync_valid_routes::GetValidRoutes();
