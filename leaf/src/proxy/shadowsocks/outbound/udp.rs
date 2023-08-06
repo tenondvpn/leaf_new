@@ -126,6 +126,11 @@ impl UdpOutboundHandler for Handler {
         let tmp_ps = vec[0].to_string();// String::from("36e9bdb0e851b567016b2f4dbe6a72f08edb3922d82e09c94b48f26392a39a81");
         let tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
         let tmp_vpn_port = vec[2].parse::<u16>().unwrap();
+        if (use_dynamic) {
+            tmp_vpn_ip = "";
+            tmp_vpn_port = 0;
+        }
+        
         let tmp_pk = vec[3];
         let tmp_ver = vec[4];
         let mut tmp_ex_route_ip = 0;
@@ -256,7 +261,7 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         let n2: u8 = thread_rng().gen_range(6..64);
         let mut all_len = 98 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
-        let mut head_size = 6;
+        let mut head_size = 0;
         if (self.ex_route_ip != 0) {
             let test_str = common::sync_valid_routes::GetValidRoutes();
             let route_vec: Vec<&str> = test_str.split(",").collect();
@@ -294,8 +299,12 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
             }
         }
 
-        buffer1.put_u32(self.vpn_ip);
-        buffer1.put_u16(self.vpn_port);
+        if (self.vpn_port != 0) {
+            buffer1.put_u32(self.vpn_ip);
+            buffer1.put_u16(self.vpn_port);
+            head_size += 6;
+        }
+       
 
         buffer1.put_u8(n2);
         let rand_string: String = thread_rng()
