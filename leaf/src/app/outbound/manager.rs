@@ -168,7 +168,6 @@ impl OutboundManager {
                         port: settings.port as u16,
                         cipher: settings.method.clone(),
                         password: settings.password.clone(),
-                        use_dynamic: false,
                     });
                     let udp = Box::new(shadowsocks::outbound::UdpHandler {
                         address: settings.address,
