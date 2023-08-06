@@ -127,7 +127,6 @@ impl UdpOutboundHandler for Handler {
         let tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
         let tmp_vpn_port = vec[2].parse::<u16>().unwrap();
         if (use_dynamic) {
-            tmp_vpn_ip = "";
             tmp_vpn_port = 0;
         }
         
