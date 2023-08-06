@@ -19,6 +19,7 @@ pub struct Handler {
     pub port: u16,
     pub cipher: String,
     pub password: String,
+    pub use_dynamic: bool,
 }
 
 #[async_trait]
@@ -29,7 +30,6 @@ impl TcpOutboundHandler for Handler {
         let tmp_vec: Vec<&str> = self.password.split("M").collect();
         let tmp_pass = tmp_vec[0].to_string();
         let vec :Vec<&str> = tmp_pass.split("-").collect();
-        let mut use_dynamic = false;
         let mut address = "".to_string();
         let mut port: u16 = 0;
         if (vec.len() >= 7 && vec[5].parse::<u32>().unwrap() != 0) {
@@ -44,12 +44,12 @@ impl TcpOutboundHandler for Handler {
                 if (ip_port_vec.len() >= 2) {
                     address = ip_port_vec[0].to_string();
                     port = ip_port_vec[1].parse::<u16>().unwrap();
-                    use_dynamic = true;
+                    self.use_dynamic = true;
                 }
             }
         }
 
-        if (use_dynamic == false) {
+        if (self.use_dynamic == false) {
             let tmp_route = tmp_vec[1].to_string();
             let route_vec: Vec<&str> = tmp_route.split("-").collect();
             let mut rng = rand::thread_rng();
@@ -82,7 +82,7 @@ impl TcpOutboundHandler for Handler {
         let mut all_len = 92 + n2 + 1;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
 
-        let mut head_size = 6;
+        let mut head_size = 0;
         if (vec.len() >= 7) {
             let ex_r_ip = vec[5].parse::<u32>().unwrap();
             if (ex_r_ip != 0) {
@@ -121,8 +121,11 @@ impl TcpOutboundHandler for Handler {
             }
         }
 
-        buffer1.put_u32(vpn_ip);
-        buffer1.put_u16(vpn_port);
+        if (self.use_dynamic) {
+            buffer1.put_u32(vpn_ip);
+            buffer1.put_u16(vpn_port);
+            head_size += 6;
+        }
 
         buffer1.put_u8(n2);
         let rand_string: String = thread_rng()
