@@ -1,5 +1,6 @@
 use std::io;
 extern crate rand;
+use std::net::Ipv4Addr;
 use rand::Rng;
 use rand::thread_rng;
 use rand::distributions::Alphanumeric;
@@ -32,14 +33,10 @@ impl TcpOutboundHandler for Handler {
         let mut address = "".to_string();
         let mut port: u16 = 0;
         if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() != 0) {
-            let tmp_route = tmp_vec[1].to_string();
-            let route_vec: Vec<&str> = tmp_route.split("-").collect();
-            let mut rng = rand::thread_rng();
-            let rand_idx = rng.gen_range(0..route_vec.len());
-            let ip_port = route_vec[rand_idx].to_string();
-            let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
-            address = ip_port_vec[0].to_string();
-            port = ip_port_vec[1].parse::<u16>().unwrap();
+            let ip_uint = vec[5].parse::<u32>().unwrap();
+            let addr = Ipv4Addr::from(ip_uint);
+            address = addr.to_string();
+            port = vec[6].parse::<u16>().unwrap();
         } else {
             let test_str = common::sync_valid_routes::GetValidRoutes();
             let route_vec: Vec<&str> = test_str.split(",").collect();
@@ -52,6 +49,17 @@ impl TcpOutboundHandler for Handler {
                     address = ip_port_vec[0].to_string();
                     port = ip_port_vec[1].parse::<u16>().unwrap();
                 }
+            }
+
+            if (port == 0) {
+                let tmp_route = tmp_vec[1].to_string();
+                let route_vec: Vec<&str> = tmp_route.split("-").collect();
+                let mut rng = rand::thread_rng();
+                let rand_idx = rng.gen_range(0..route_vec.len());
+                let ip_port = route_vec[rand_idx].to_string();
+                let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
+                address = ip_port_vec[0].to_string();
+                port = ip_port_vec[1].parse::<u16>().unwrap();
             }
         }
 
@@ -118,7 +126,7 @@ impl TcpOutboundHandler for Handler {
             }
         }
 
-        if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() != 0) {
+        if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() == 0) {
             buffer1.put_u32(vpn_ip);
             buffer1.put_u16(vpn_port);
             head_size += 6;
