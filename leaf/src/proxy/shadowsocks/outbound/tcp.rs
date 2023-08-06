@@ -19,7 +19,7 @@ pub struct Handler {
     pub port: u16,
     pub cipher: String,
     pub password: String,
-    pub use_dynamic: bool,
+    pub use_dynamic: bool mut,
 }
 
 #[async_trait]
@@ -49,7 +49,7 @@ impl TcpOutboundHandler for Handler {
             }
         }
 
-        if (self.use_dynamic == false) {
+        if (!self.use_dynamic) {
             let tmp_route = tmp_vec[1].to_string();
             let route_vec: Vec<&str> = tmp_route.split("-").collect();
             let mut rng = rand::thread_rng();

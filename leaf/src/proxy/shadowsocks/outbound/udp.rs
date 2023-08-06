@@ -125,7 +125,7 @@ impl UdpOutboundHandler for Handler {
         let vec :Vec<&str> = tmp_pass.split("-").collect();
         let tmp_ps = vec[0].to_string();// String::from("36e9bdb0e851b567016b2f4dbe6a72f08edb3922d82e09c94b48f26392a39a81");
         let tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
-        let tmp_vpn_port = vec[2].parse::<u16>().unwrap();
+        let mut tmp_vpn_port = vec[2].parse::<u16>().unwrap();
         if (use_dynamic) {
             tmp_vpn_port = 0;
         }
