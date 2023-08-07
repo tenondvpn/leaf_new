@@ -35,6 +35,14 @@ pub fn add_handler_fn(registrar: &mut dyn PluginRegistrar, tag: &str, args: &str
     let password: String = args.next().unwrap().to_string();
 
     let tmp_vec: Vec<&str> = password.split("M").collect();
+    let tmp_pass = tmp_vec[0].to_string();
+    let vec :Vec<&str> = tmp_pass.split("-").collect();
+    let mut address = "".to_string();
+    let mut port: u16 = 0;
+    if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
+        address = vec[1].to_string();
+        port = vec[2].parse::<u16>().unwrap();
+    } else {
         let tmp_route = tmp_vec[1].to_string();
         let route_vec: Vec<&str> = tmp_route.split("-").collect();
         let mut rng = rand::thread_rng();
@@ -43,6 +51,7 @@ pub fn add_handler_fn(registrar: &mut dyn PluginRegistrar, tag: &str, args: &str
         let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
         address = ip_port_vec[0].to_string();
         port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
+    }
 
     registrar.add_handler(
         tag,
