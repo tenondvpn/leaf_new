@@ -32,7 +32,7 @@ impl UdpOutboundHandler for Handler {
         let vec :Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
-        if (vec.len() >= 7 && vec[5].parse::<u32>().unwrap() != 0) {
+        if (vec.len() >= 8 && vec[5].parse::<u32>().unwrap() != 0) {
             address = vec[1].to_string();
             port = vec[2].parse::<u16>().unwrap();
         } else {
@@ -86,7 +86,7 @@ impl UdpOutboundHandler for Handler {
         let vec :Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
-        if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() != 0) {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             address = vec[1].to_string();
             port = vec[2].parse::<u16>().unwrap();
         } else {
@@ -126,7 +126,7 @@ impl UdpOutboundHandler for Handler {
         let tmp_ps = vec[0].to_string();// String::from("36e9bdb0e851b567016b2f4dbe6a72f08edb3922d82e09c94b48f26392a39a81");
         let tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
         let mut tmp_vpn_port = vec[2].parse::<u16>().unwrap();
-        if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() != 0) {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             tmp_vpn_port = 0;
         }
         
@@ -134,7 +134,7 @@ impl UdpOutboundHandler for Handler {
         let tmp_ver = vec[4];
         let mut tmp_ex_route_ip = 0;
         let mut tmp_ex_route_port = 0;
-        if (vec.len() >= 7) {
+        if (vec.len() >= 8) {
             tmp_ex_route_ip = vec[5].parse::<u32>().unwrap();
             tmp_ex_route_port = vec[6].parse::<u16>().unwrap();
         }

@@ -32,7 +32,7 @@ impl TcpOutboundHandler for Handler {
         let vec :Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
-        if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() != 0) {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             address = vec[1].to_string();
             port = vec[2].parse::<u16>().unwrap();
         } else {
@@ -82,7 +82,7 @@ impl TcpOutboundHandler for Handler {
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
 
         let mut head_size = 0;
-        if (vec.len() >= 7) {
+        if (vec.len() >= 8) {
             if (vec[7].parse::<u32>().unwrap() == 0) {
                 let ex_r_ip = vec[5].parse::<u32>().unwrap();
                 if (ex_r_ip != 0) {
@@ -122,7 +122,7 @@ impl TcpOutboundHandler for Handler {
             }
         }
 
-        if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() == 0) {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() == 0) {
             let vpn_ip = vec[1].parse::<u32>().unwrap();
             let vpn_port = vec[2].parse::<u16>().unwrap();
             buffer1.put_u32(vpn_ip);
