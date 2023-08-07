@@ -35,6 +35,7 @@ pub fn add_handler_fn(registrar: &mut dyn PluginRegistrar, tag: &str, args: &str
     let password: String = args.next().unwrap().to_string();
 
     let tmp_vec: Vec<&str> = password.split("M").collect();
+    let tmp_pass = tmp_vec[0].to_string();
     let vec :Vec<&str> = tmp_pass.split("-").collect();
     let mut address = "".to_string();
     let mut port: u16 = 0;

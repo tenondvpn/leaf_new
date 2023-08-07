@@ -30,10 +30,11 @@ impl UdpOutboundHandler for Handler {
         let tmp_vec: Vec<&str> = self.password.split("M").collect();
         let tmp_pass = tmp_vec[0].to_string();
         let vec :Vec<&str> = tmp_pass.split("-").collect();
-        let mut use_dynamic = false;
         let mut address = "".to_string();
         let mut port: u16 = 0;
         if (vec.len() >= 7 && vec[5].parse::<u32>().unwrap() != 0) {
+            address = vec[1].to_string();
+            port = vec[2].parse::<u16>().unwrap();
         } else {
             let test_str = common::sync_valid_routes::GetValidRoutes();
             let route_vec: Vec<&str> = test_str.split(",").collect();
@@ -43,22 +44,21 @@ impl UdpOutboundHandler for Handler {
                 if (ip_port_vec.len() >= 2) {
                     address = ip_port_vec[0].to_string();
                     port = ip_port_vec[1].parse::<u16>().unwrap();
-                    use_dynamic = true;
                 }
             }
-        }
 
-        if (use_dynamic == false) {
-            let tmp_route = tmp_vec[1].to_string();
-            let route_vec: Vec<&str> = tmp_route.split("-").collect();
-            let mut rng = rand::thread_rng();
-            let rand_idx = rng.gen_range(0..route_vec.len());
-            let ip_port = route_vec[rand_idx].to_string();
-            let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
-            address = ip_port_vec[0].to_string();
-            port = ip_port_vec[1].parse::<u16>().unwrap();
+            if (port == 0) {
+                let tmp_route = tmp_vec[1].to_string();
+                let route_vec: Vec<&str> = tmp_route.split("-").collect();
+                let mut rng = rand::thread_rng();
+                let rand_idx = rng.gen_range(0..route_vec.len());
+                let ip_port = route_vec[rand_idx].to_string();
+                let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
+                address = ip_port_vec[0].to_string();
+                port = ip_port_vec[1].parse::<u16>().unwrap();
+            }
         }
-
+        
         // let tmp_route = tmp_vec[1].to_string();
         // let route_vec: Vec<&str> = tmp_route.split("-").collect();
         // let mut rng = rand::thread_rng();
