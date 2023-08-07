@@ -74,8 +74,6 @@ impl TcpOutboundHandler for Handler {
         let tmp_pass = tmp_vec[0].to_string();
         let vec :Vec<&str> = tmp_pass.split("-").collect(); 
         let tmp_ps = vec[0].to_string();
-        let vpn_ip = vec[1].parse::<u32>().unwrap();
-        let vpn_port = vec[2].parse::<u16>().unwrap();
         let pk_str = vec[3].to_string();
         let ver = vec[4].to_string();
 
@@ -125,6 +123,8 @@ impl TcpOutboundHandler for Handler {
         }
 
         if (vec.len() >= 7 && vec[7].parse::<u32>().unwrap() == 0) {
+            let vpn_ip = vec[1].parse::<u32>().unwrap();
+            let vpn_port = vec[2].parse::<u16>().unwrap();
             buffer1.put_u32(vpn_ip);
             buffer1.put_u16(vpn_port);
             head_size += 6;
