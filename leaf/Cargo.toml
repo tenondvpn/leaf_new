@@ -17,8 +17,8 @@ default = [
 default-ring = [
     "all-configs",
     "all-endpoints",
-#    "ring-aead",
-    "openssl-aead",
+    "ring-aead",
+#    "openssl-aead",
     "rustls-tls",
     # quinn supports only rustls as tls backend for now
     "inbound-quic",
