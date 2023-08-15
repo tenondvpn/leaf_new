@@ -2,9 +2,9 @@ use std::thread;
 use std::time::Duration;
 use std::process;
 use std::panic;
-extern crate easy_http_request;
+//extern crate easy_http_request;
  
-use easy_http_request::DefaultHttpRequest;
+//use easy_http_request::DefaultHttpRequest;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 lazy_static! {
@@ -24,7 +24,7 @@ pub fn StartThread(id: String) {
         let mut tmp_v = valid_tmp_id.lock().unwrap();
         tmp_v.push_str(&id.clone());
     }
-    
+    /*
     thread::spawn(|| {
         while (true) {
             let response = DefaultHttpRequest::get_from_url_str(
@@ -55,6 +55,7 @@ pub fn StartThread(id: String) {
             thread::sleep(Duration::from_millis(10000));
         }
     });
+    */
 }
 
 pub fn GetValidRoutes() -> String {

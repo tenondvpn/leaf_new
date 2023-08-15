@@ -79,6 +79,10 @@ impl TcpOutboundHandler for Handler {
 
         let n2: u8 = thread_rng().gen_range(7..64);
         let mut all_len = 92 + n2 + 1;
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
+            all_len -= 6;
+        }
+
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
 
         let mut head_size = 0;
@@ -128,7 +132,7 @@ impl TcpOutboundHandler for Handler {
             buffer1.put_u32(vpn_ip);
             buffer1.put_u16(vpn_port);
             head_size += 6;
-        }
+        } 
 
         buffer1.put_u8(n2);
         let rand_string: String = thread_rng()
