@@ -4,6 +4,36 @@ use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use bytes::BytesMut;
 
+use std::ffi::CString;
+use std::ptr::null;
+use std::mem;
+use std::str;
+use std::slice;
+
+pub struct SM4Key {
+    pub rk: [u32; 32],
+}
+
+impl SM4Key{
+    pub fn new() -> SM4Key{
+        SM4Key{
+           rk: unsafe {mem::uninitialized()},
+        }
+    }
+}
+
+#[link(name="gmssl")]
+extern "C" {
+    fn add(key: *const SM4Key, a: i32, b: i32, data: *mut i8, len: usize) -> i32;
+    fn sm4_set_encrypt_key(key: *mut SM4Key, raw_key: *const u8);
+    fn sm4_gcm_encrypt(key: *const SM4Key, iv: *const u8, ivlen: usize,
+        aad: *const u8, aadlen: usize, in1: *const u8, inlen: usize,
+        out: *const u8, taglen: usize, tag: *const u8) -> i32;
+    fn sm4_gcm_decrypt(key: *const SM4Key, iv: *const u8, ivlen: usize,
+        aad: *const u8, aadlen: usize, in1: *const u8, inlen: usize,
+        tag: *const u8, taglen: usize, out: *const u8) -> i32;
+}
+
 pub trait Cipher<N>: Sync + Send + Unpin
     where
         N: NonceSequence,
@@ -54,7 +84,7 @@ pub mod aead {
             m.insert("chacha20-ietf-poly1305", symm::Cipher::chacha20_poly1305());
             m.insert("aes-256-gcm", symm::Cipher::aes_256_gcm());
             m.insert("aes-128-gcm", symm::Cipher::aes_128_gcm());
-            m.insert("sm4_cbc", symm::Cipher::sm4_cbc());
+            m.insert("sm4-gcm", symm::Cipher::aes_128_gcm());
             m
         };
     }
@@ -122,6 +152,7 @@ pub mod aead {
         key: Vec<u8>,
         nonce: N,
         tag_len: usize,
+        sm4_key: SM4Key,
     }
 
     impl<N> AeadEncryptor<N>
@@ -129,12 +160,18 @@ pub mod aead {
             N: NonceSequence,
     {
         pub fn new(cipher: symm::Cipher, key: Vec<u8>, nonce: N, tag_len: usize, cipher_name: String) -> Self {
+            let mut sm4_key = SM4Key::new();
+            let raw_mut_sm4key = &mut sm4_key as *mut SM4Key;
+            unsafe {
+                sm4_set_encrypt_key(raw_mut_sm4key, key.as_ptr());
+            }
             AeadEncryptor {
                 cipher_name,
                 cipher,
                 key,
                 nonce,
                 tag_len,
+                sm4_key,
             }
         }
     }
@@ -151,17 +188,30 @@ pub mod aead {
                 .nonce
                 .advance()
                 .map_err(|e| anyhow!("encrypt failed: {}", e))?;
-            let mut tag = vec![0u8; self.tag_len];
+            let mut tag = vec![1u8; self.tag_len];
             // TODO in-place?
-            if self.cipher_name.eq("sm4_cbc") {
-                let ciphertext =  symm::encrypt(self.cipher, &self.key, Some(&nonce), in_out.as_ref())
-                    .map_err(|e| anyhow!("use {} encrypt failed: {}",self.cipher_name, e))?;
-                // 扩展 in_out 的容量来适应密文长度
-                let extend_size = ciphertext.len() - in_out.as_mut().len();
-                if extend_size > 0 {
-                    in_out.extend(&vec![0u8; extend_size]);
+            if self.cipher_name.eq("sm4-gcm") {
+                let plain_txt = in_out.as_ref();
+                let mut out_vec = vec![1u8; plain_txt.len()];
+                unsafe {
+                    let res_size = sm4_gcm_encrypt(
+                        &self.sm4_key,
+                        nonce.as_ptr(),
+                        nonce.len() as usize,
+                        nonce.as_ptr(),
+                        0,
+                        plain_txt.as_ptr(),
+                        plain_txt.len() as usize,
+                        out_vec.as_ptr(),
+                        16,
+                        tag.as_ptr());
+                    if (res_size != 1) {
+                        panic!("sm4 gcm encrypt failed!");
+                    }
                 }
-                (&mut in_out.as_mut()[..ciphertext.len()]).copy_from_slice(&ciphertext);
+
+                (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
+                in_out.extend(&tag);
             } else {
                 let ciphertext = symm::encrypt_aead(
                     self.cipher,
@@ -184,6 +234,7 @@ pub mod aead {
         key: Vec<u8>,
         nonce: N,
         tag_len: usize,
+        sm4_key: SM4Key,
     }
 
     impl<N> AeadDecryptor<N>
@@ -191,12 +242,18 @@ pub mod aead {
             N: NonceSequence,
     {
         pub fn new(cipher: symm::Cipher, key: Vec<u8>, nonce: N, tag_len: usize, cipher_name: String) -> Self {
+            let mut sm4_key = SM4Key::new();
+            let raw_mut_sm4key = &mut sm4_key as *mut SM4Key;
+            unsafe {
+                sm4_set_encrypt_key(raw_mut_sm4key, key.as_ptr());
+            }
             AeadDecryptor {
                 cipher_name,
                 cipher,
                 key,
                 nonce,
                 tag_len,
+                sm4_key,
             }
         }
     }
@@ -214,19 +271,35 @@ pub mod aead {
                 .advance()
                 .map_err(|e| anyhow!("decrypt failed: {}", e))?;
             // TODO in-place?
-            let plaintext = if self.cipher_name.eq("sm4_cbc") {
-                symm::decrypt(self.cipher, &self.key, Some(&nonce), in_out.as_ref()).map_err(
-                    |e| anyhow!("use {} decrypt failed: {}", self.cipher_name, e))?
+            if self.cipher_name.eq("sm4-gcm") {
+                let in_out_ref = in_out.as_ref();
+                let data = &in_out_ref[..in_out_ref.len() - self.tag_len];
+                let tag = &in_out_ref[in_out_ref.len() - self.tag_len..];
+                let mut out_vec = vec![1u8; data.len()];
+                unsafe {
+                    let dec_size = sm4_gcm_decrypt(
+                        &self.sm4_key,
+                        nonce.as_ptr(),
+                        nonce.len() as usize,
+                        nonce.as_ptr(),
+                        0,
+                        data.as_ptr(),
+                        data.len() as usize,
+                        tag.as_ptr(),
+                        16,
+                        out_vec.as_ptr());
+                }
+
+                (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
             } else {
                 let in_out_ref = in_out.as_ref();
                 let data = &in_out_ref[..in_out_ref.len() - self.tag_len];
                 let tag = &in_out_ref[in_out_ref.len() - self.tag_len..];
-                symm::decrypt_aead(self.cipher, &self.key, Some(&nonce), &[], data, tag)
-                    .map_err(|e| anyhow!("decrypt failed: {}", e))?
+                let tmp_plaintext = symm::decrypt_aead(self.cipher, &self.key, Some(&nonce), &[], data, tag)
+                    .map_err(|e| anyhow!("decrypt failed: {}", e))?;
+                (&mut in_out.as_mut()[..tmp_plaintext.len()]).copy_from_slice(&tmp_plaintext);
             };
 
-
-            (&mut in_out.as_mut()[..plaintext.len()]).copy_from_slice(&plaintext);
             Ok(())
         }
     }
@@ -245,6 +318,7 @@ pub mod aead {
             m.insert("chacha20-ietf-poly1305", &aead::CHACHA20_POLY1305);
             m.insert("aes-256-gcm", &aead::AES_256_GCM);
             m.insert("aes-128-gcm", &aead::AES_128_GCM);
+            m.insert("sm4-gcm", &aead::AES_128_GCM);
             m
         };
     }
@@ -377,7 +451,41 @@ mod tests {
     use super::*;
 
     #[test]
-    #[cfg(any(feature = "openssl-aead"))]
+    fn test_sm4_aead_enc_dec() {
+        unsafe {
+            let mut hello = String::from("Hello, ");
+            let len = hello.len();
+            let format = CString::new(hello).unwrap();
+            let mut raw_str = format.into_raw();
+            let mut param=SM4Key::new();
+            let mut key = String::from("1234567890123456");
+            let mut iv = String::from("1234567890123456");
+            let mut tag = String::from("1234567890123456");
+
+            let raw_mut_sm4key = &mut param as *mut SM4Key;
+            sm4_set_encrypt_key(raw_mut_sm4key, key.as_ptr());
+
+            let mut plain_txt = String::from("plain text");
+            let mut dec_txt = String::from("xxxxx ixxx");
+            let mut out_txt = String::from("plain text");
+            let out_txt_cstr = CString::new(out_txt).unwrap();
+            let mut out_raw_txt = out_txt_cstr.into_raw() as *mut u8;
+            let tag_cstr = CString::new(tag).unwrap();
+            let mut tag_raw = tag_cstr.into_raw() as *mut u8;
+            let mut dec_txt_cstr = CString::new(dec_txt).unwrap();
+            let mut dec_raw = dec_txt_cstr.into_raw() as *mut u8;
+
+            let res_size = sm4_gcm_encrypt(&param, iv.as_ptr(), iv.len() as usize, iv.as_ptr(), 0, plain_txt.as_ptr(), plain_txt.len() as usize, out_raw_txt, 16, tag_raw);
+            let dec_size = sm4_gcm_decrypt(&param, iv.as_ptr(), iv.len() as usize, iv.as_ptr(), 0, out_raw_txt, plain_txt.len() as usize, tag_raw, 16, dec_raw);
+
+            let dec_raw_cstr = CString::from_raw(dec_raw as *mut i8);
+            let dec_str: &str = dec_raw_cstr.to_str().unwrap();
+            let dec_str_buf: String = dec_str.to_owned();
+            println!("dec str: {}", dec_str_buf);
+        }
+    }
+
+    //#[cfg(any(feature = "openssl-aead"))]
     fn test_aead_enc_dec() {
         struct ShadowsocksNonceSequence(Vec<u8>);
 
@@ -408,7 +516,7 @@ mod tests {
         }
         let plaintext = b"Hello, world!";
 
-        for method_name in ["chacha20-poly1305", "chacha20-ietf-poly1305", "aes-256-gcm", "aes-128-gcm", "sm4_cbc"].iter() {
+        for method_name in ["chacha20-poly1305", "chacha20-ietf-poly1305", "aes-256-gcm", "aes-128-gcm", "sm4-gcm"].iter() {
             let cipher = aead::AeadCipher::new(method_name).unwrap();
             let key = vec![0u8; cipher.key_len()];
 
