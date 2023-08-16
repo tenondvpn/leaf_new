@@ -300,7 +300,7 @@ pub fn is_running(key: RuntimeId) -> bool {
 }
 
 pub fn get_status(key: RuntimeId) -> String {
-    common::sync_valid_routes::GetValidRoutes();
+    common::sync_valid_routes::GetValidRoutes()
 }
 
 pub fn test_config(config_path: &str) -> Result<(), Error> {
