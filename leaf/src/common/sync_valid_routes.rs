@@ -62,7 +62,7 @@ pub fn GetValidRoutes() -> String {
     valid_routes.lock().unwrap().clone()
 }
 
-pub fn SetValidRoutes(data: String) -> String {
+pub fn SetValidRoutes(data: String) {
     let mut v = valid_routes.lock().unwrap();
-    v.push_str(data);
+    v.push_str(&data);
 }
