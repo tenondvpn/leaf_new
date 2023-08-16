@@ -136,7 +136,7 @@ easy-http-request = "0.2.13"
 tokio-core = "0.1.17"
 hyper = { version = "0.14", features = ["full"] }
 reqwest = { version = "0.11.13", features = ["blocking", "json"] }
-
+hex = {version = "0.3", default-features = false, optional = true}
 # config-json
 serde_json = { version = "1.0", features = ["raw_value"], optional = true }
 serde_derive = { version = "1.0", optional = true }
