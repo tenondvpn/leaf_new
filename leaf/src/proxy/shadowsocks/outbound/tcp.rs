@@ -61,7 +61,6 @@ impl TcpOutboundHandler for Handler {
             }
         }
 
-        common::sync_valid_routes::SetValidRoutes(address.clone());
         Some(OutboundConnect::Proxy(address.clone(), port))
     }
 
