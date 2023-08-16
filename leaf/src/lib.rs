@@ -299,7 +299,7 @@ pub fn is_running(key: RuntimeId) -> bool {
     RUNTIME_MANAGER.lock().unwrap().contains_key(&key)
 }
 
-pub fn get_status(key: RuntimeId) -> String {
+pub fn get_status() -> String {
     common::sync_valid_routes::GetValidRoutes()
 }
 

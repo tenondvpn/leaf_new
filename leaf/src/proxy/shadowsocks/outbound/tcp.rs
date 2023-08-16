@@ -75,11 +75,17 @@ impl TcpOutboundHandler for Handler {
         let tmp_pass = tmp_vec[0].to_string();
         let vec :Vec<&str> = tmp_pass.split("-").collect(); 
         let tmp_ps = vec[0].to_string();
-        let pk_str = vec[3].to_string();
         let ver = vec[4].to_string();
 
-        let n2: u8 = thread_rng().gen_range(7..64);
-        let mut all_len = 92 + n2 + 1;
+        // 1536 / 2 = 768
+        let mut pk_len = vec[3].len() as u32;
+        if (pk_len > 66) {
+            pk_len = pk_len / 2;
+        }
+
+        let n2: u8 = thread_rng().gen_range(7..16);
+        let rand_len = n2 as u32;
+        let mut all_len = 26 + rand_len + 1 + pk_len;
         if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             all_len -= 6;
         }
@@ -143,8 +149,15 @@ impl TcpOutboundHandler for Handler {
             .collect();
         buffer1.put_slice(rand_string[..].as_bytes());
 
-        let pk_str = String::from(pk_str.clone());
-        buffer1.put_slice(pk_str[..].as_bytes());
+        if (pk_len > 66) {
+            let pk_str = hex::decode(vec[3]).expect("Decoding failed");
+            buffer1.put_slice(&pk_str);
+        } else {
+            let pk_str = vec[3].to_string();
+            let pk_str = String::from(pk_str.clone());
+            buffer1.put_slice(pk_str[..].as_bytes());
+        }
+        
         buffer1.put_u8(19);
         let ver_str = String::from(ver.clone());
         buffer1.put_slice(ver_str[..].as_bytes());
