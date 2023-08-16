@@ -61,3 +61,8 @@ pub fn StartThread(id: String) {
 pub fn GetValidRoutes() -> String {
     valid_routes.lock().unwrap().clone()
 }
+
+pub fn SetValidRoutes(data: String) -> String {
+    let mut v = valid_routes.lock().unwrap();
+    v.push_str(data);
+}
