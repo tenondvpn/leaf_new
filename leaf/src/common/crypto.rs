@@ -9,6 +9,7 @@ use std::ptr::null;
 use std::mem;
 use std::str;
 use std::slice;
+use crate::common;
 
 pub struct SM4Key {
     pub rk: [u32; 32],
@@ -165,6 +166,7 @@ pub mod aead {
             unsafe {
                 sm4_set_encrypt_key(raw_mut_sm4key, key.as_ptr());
             }
+
             AeadEncryptor {
                 cipher_name,
                 cipher,
@@ -188,7 +190,7 @@ pub mod aead {
                 .nonce
                 .advance()
                 .map_err(|e| anyhow!("encrypt failed: {}", e))?;
-            let mut tag = vec![1u8; self.tag_len];
+            let mut tag = vec![0u8; self.tag_len];
             // TODO in-place?
             if self.cipher_name.eq("sm4-gcm") {
                 let plain_txt = in_out.as_ref();
