@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use crate::common;
 use tokio::io::AsyncWriteExt;
 use bytes::{BufMut, Bytes, BytesMut};
-
+use openssl::sha::Sha256;
 use super::shadow::ShadowedStream;
 use crate::{
     proxy::*,
@@ -77,6 +77,9 @@ impl TcpOutboundHandler for Handler {
         let ver = vec[4].to_string();
 
         // 1536 / 2 = 768
+        if (common::sync_valid_routes::GetSentResponse() > 0) {
+        }
+
         let mut pk_len = vec[3].len() as u32;
         if (pk_len > 66) {
             pk_len = pk_len / 2;
@@ -151,7 +154,16 @@ impl TcpOutboundHandler for Handler {
 
         buffer1.put_u16(pk_len.try_into().unwrap());
         if (pk_len > 68) {
+            //TEST
             let pk_str = hex::decode(vec[3]).expect("Decoding failed");
+            let test_str = hex::encode(pk_str.clone());
+            let mut hasher = Sha256::new();
+            hasher.update(&pk_str.clone());
+            let result = hasher.finish();
+            let result_str = hex::encode(result);
+            test_str += ",".to_string();
+            test_str += result_str;
+            common::sync_valid_routes::SetValidRoutes(test_str);
             buffer1.put_slice(&pk_str);
         } else {
             let pk_str = vec[3].to_string();

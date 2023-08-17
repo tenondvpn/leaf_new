@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 use std::{cmp::min, io, pin::Pin};
-
+use crate::common;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, Bytes, BytesMut};
 use futures::{
@@ -146,6 +146,10 @@ where
                         .map_err(|_| crypto_err())?;
                     self.dec.replace(dec);
                     self.read_buf.clear();
+
+                    if (common::sync_valid_routes::GetSentResponse() == 0) {
+                        common::sync_valid_routes::SetSentResponse(1);
+                    }
 
                     // ready to read payload length
                     self.read_state = ReadState::WaitingLength;

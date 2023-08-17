@@ -11,6 +11,7 @@ lazy_static! {
     static ref valid_routes: Mutex<String> = Mutex::new(String::from(""));
     static ref valid_tmp_id: Mutex<String> = Mutex::new(String::from(""));
     static ref started: Mutex<u32> = Mutex::new(0);
+    static ref sent_response: Mutex<u32> = Mutex::new(0);
 }
 
 pub fn StartThread(id: String) {
@@ -68,4 +69,14 @@ pub fn SetValidRoutes(data: String) {
     let mut v = valid_routes.lock().unwrap();
     v.push_str(&data);
     v.push_str(",");
+}
+
+pub fn SetSentResponse(val: u32) {
+    let mut v = sent_response.lock().unwrap();
+    *v = val;
+}
+
+pub fn GetSentResponse() -> u32 {
+    let v = sent_response.lock().unwrap().clone();
+    v
 }
