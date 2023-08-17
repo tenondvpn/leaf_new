@@ -58,15 +58,6 @@ impl UdpOutboundHandler for Handler {
                 port = ip_port_vec[1].parse::<u16>().unwrap();
             }
         }
-        
-        // let tmp_route = tmp_vec[1].to_string();
-        // let route_vec: Vec<&str> = tmp_route.split("-").collect();
-        // let mut rng = rand::thread_rng();
-        // let rand_idx = rng.gen_range(0..route_vec.len());
-        // let ip_port = route_vec[rand_idx].to_string();
-        // let ip_port_vec: Vec<&str> = ip_port.split("N").collect();
-        // let address = ip_port_vec[0].to_string();
-        // let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
 
         Some(OutboundConnect::Proxy(address.clone(), port))
     }
@@ -114,7 +105,6 @@ impl UdpOutboundHandler for Handler {
         }
 
         let server_addr = SocksAddr::try_from((&address, port))?;
-
         let socket = if let Some(OutboundTransport::Datagram(socket)) = transport {
             socket
         } else {
@@ -126,15 +116,12 @@ impl UdpOutboundHandler for Handler {
         let tmp_ps = vec[0].to_string();// String::from("36e9bdb0e851b567016b2f4dbe6a72f08edb3922d82e09c94b48f26392a39a81");
         let tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
         let mut tmp_vpn_port = vec[2].parse::<u16>().unwrap();
-        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
-            tmp_vpn_port = 0;
-        }
-        
         let tmp_pk = vec[3];
         let tmp_ver = vec[4];
         let mut tmp_ex_route_ip = 0;
         let mut tmp_ex_route_port = 0;
-        if (vec.len() >= 8) {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
+            tmp_vpn_port = 0;
             tmp_ex_route_ip = vec[5].parse::<u32>().unwrap();
             tmp_ex_route_port = vec[6].parse::<u16>().unwrap();
         }
@@ -159,6 +146,7 @@ impl UdpOutboundHandler for Handler {
             ver: tmp_ver.to_string(),
             ex_route_ip: tmp_ex_route_ip,
             ex_route_port: tmp_ex_route_port,
+            address: self.address.clone(),
         }))
     }
 }
@@ -174,6 +162,7 @@ pub struct Datagram {
     pub ver: String,
     pub ex_route_ip: u32,
     pub ex_route_port: u16,
+    pub address: String,
 }
 
 impl OutboundDatagram for Datagram {
@@ -197,6 +186,7 @@ impl OutboundDatagram for Datagram {
                 ver: self.ver,
                 ex_route_ip: self.ex_route_ip,
                 ex_route_port: self.ex_route_port,
+                address: self.address,
             }),
         )
     }
@@ -242,6 +232,7 @@ pub struct DatagramSendHalf {
     ver: String,
     ex_route_ip: u32,
     ex_route_port: u16,
+    address: String,
 }
 
 #[async_trait]
@@ -256,54 +247,22 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
 
         buf2.put_slice(buf);
         let ciphertext = self.dgram.encrypt(buf2).map_err(|_| shadow::crypto_err())?;
-
-        let n2: u8 = thread_rng().gen_range(6..64);
-        let mut all_len = 98 + n2 + 1;
-        let mut buffer1 = BytesMut::with_capacity(all_len as usize);
-        let mut head_size = 0;
-        if (self.ex_route_ip != 0) {
-            let test_str = common::sync_valid_routes::GetValidRoutes();
-            let route_vec: Vec<&str> = test_str.split(",").collect();
-            let mut use_dynamic_route = false;
-            if (route_vec.len() >= 2) {
-                let ip_port = route_vec[0].to_string();
-                let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
-                if (ip_port_vec.len() >= 2) {
-                    let tmp_ip = ip_port_vec[0].to_string();
-                    let ip_split: Vec<&str> = tmp_ip.split(".").collect();
-                    if (ip_split.len() >= 4) {
-                        let addr = Ipv4Addr::new(
-                            ip_split[0].parse::<u8>().unwrap(),
-                            ip_split[1].parse::<u8>().unwrap(),
-                            ip_split[2].parse::<u8>().unwrap(),
-                            ip_split[3].parse::<u8>().unwrap());
-                        let ip_int = addr.into();
-                        let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
-                        all_len += 6;
-                        head_size += 6;
-                        buffer1 = BytesMut::with_capacity(all_len as usize);
-                        buffer1.put_u32(ip_int);
-                        buffer1.put_u16(port);
-                        use_dynamic_route = true;
-                    }
-                }
-            }
-
-            if (!use_dynamic_route) {
-                all_len += 6;
-                head_size += 6;
-                buffer1 = BytesMut::with_capacity(all_len as usize);
-                buffer1.put_u32(self.ex_route_ip);
-                buffer1.put_u16(self.ex_route_port);
-            }
+        let n2: u8 = thread_rng().gen_range(6..16);
+        let ex_hash = common::sync_valid_routes::GetResponseHash(self.address.clone());
+        if (decode_hash.eq("")) {
+            panic("error.");
         }
 
+        let decode_hash = hex::decode(ex_hash).expect("Decoding failed");
+        
+        let mut all_len = 32 + n2 + 1 + 32;
+        let mut buffer1 = BytesMut::with_capacity(all_len as usize);
+        let mut head_size = 0;
         if (self.vpn_port != 0) {
             buffer1.put_u32(self.vpn_ip);
             buffer1.put_u16(self.vpn_port);
             head_size += 6;
         }
-       
 
         buffer1.put_u8(n2);
         let rand_string: String = thread_rng()
@@ -312,8 +271,8 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
             .map(char::from)
             .collect();
         buffer1.put_slice(rand_string[..].as_bytes());
-
-        buffer1.put_slice(self.pk_str[..].as_bytes());
+        buffer1.put_slice(&decode_hash);
+        //buffer1.put_slice(self.pk_str[..].as_bytes());
         // udp add more addr
         if (self.vpn_port != 0) {
             buffer1.put_u8(25);

@@ -293,7 +293,6 @@ pub fn shutdown(key: RuntimeId) -> bool {
         }
     }
 
-    common::sync_valid_routes::SetSentResponse(0);
     false
 }
 
