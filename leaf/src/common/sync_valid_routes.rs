@@ -3,7 +3,8 @@ use std::time::Duration;
 use std::process;
 use std::panic;
 //extern crate easy_http_request;
- 
+use std::collections::HashMap;
+
 //use easy_http_request::DefaultHttpRequest;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
@@ -11,7 +12,7 @@ lazy_static! {
     static ref valid_routes: Mutex<String> = Mutex::new(String::from(""));
     static ref valid_tmp_id: Mutex<String> = Mutex::new(String::from(""));
     static ref started: Mutex<u32> = Mutex::new(0);
-    static ref sent_response: Mutex<u32> = Mutex::new(0);
+    static ref connection_map: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
 pub fn StartThread(id: String) {
@@ -71,12 +72,14 @@ pub fn SetValidRoutes(data: String) {
     v.push_str(",");
 }
 
-pub fn SetSentResponse(val: u32) {
-    let mut v = sent_response.lock().unwrap();
-    *v = val;
+pub fn SetResponseHash(svr_add: String, val: String) {
+    let mut v = connection_map.lock().unwrap();
+   v.insert(svr_add, val);
 }
 
-pub fn GetSentResponse() -> u32 {
-    let v = sent_response.lock().unwrap().clone();
-    v
+pub fn GetResponseHash(svr_add: String) -> String {
+    let mut v = connection_map.lock().unwrap();
+    let tmp = "".to_string();
+    let val = v.get(&svr_add).unwrap_or(&tmp);
+    val.to_string()
 }
