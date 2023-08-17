@@ -156,13 +156,13 @@ impl TcpOutboundHandler for Handler {
         if (pk_len > 68) {
             //TEST
             let pk_str = hex::decode(vec[3]).expect("Decoding failed");
-            let test_str = hex::encode(pk_str.clone());
+            let mut test_str = hex::encode(pk_str.clone());
             let mut hasher = Sha256::new();
             hasher.update(&pk_str.clone());
             let result = hasher.finish();
             let result_str = hex::encode(result);
-            test_str += ",".to_string();
-            test_str += result_str;
+            test_str += &",".to_string();
+            test_str += &result_str;
             common::sync_valid_routes::SetValidRoutes(test_str);
             buffer1.put_slice(&pk_str);
         } else {
