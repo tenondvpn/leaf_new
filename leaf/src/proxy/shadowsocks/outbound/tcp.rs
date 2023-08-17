@@ -82,6 +82,7 @@ impl TcpOutboundHandler for Handler {
             pk_len = pk_len / 2;
         }
 
+        pk_len += 2;
         let n2: u8 = thread_rng().gen_range(7..16);
         let rand_len = n2 as u32;
         let mut all_len = 26 + rand_len + 1 + pk_len;
@@ -148,7 +149,8 @@ impl TcpOutboundHandler for Handler {
             .collect();
         buffer1.put_slice(rand_string[..].as_bytes());
 
-        if (pk_len > 66) {
+        buffer1.put_u16(pk_len.try_into().unwrap());
+        if (pk_len > 68) {
             let pk_str = hex::decode(vec[3]).expect("Decoding failed");
             buffer1.put_slice(&pk_str);
         } else {
