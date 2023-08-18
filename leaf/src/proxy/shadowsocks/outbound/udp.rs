@@ -32,7 +32,7 @@ impl UdpOutboundHandler for Handler {
         let vec :Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
-        if (vec.len() >= 8 && vec[5].parse::<u32>().unwrap() != 0) {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             address = vec[1].to_string();
             port = vec[2].parse::<u16>().unwrap();
         } else {
@@ -71,16 +71,19 @@ impl UdpOutboundHandler for Handler {
         sess: &'a Session,
         transport: Option<OutboundTransport<Self::UStream, Self::Datagram>>,
     ) -> io::Result<Self::Datagram> {
-
         let tmp_vec: Vec<&str> = self.password.split("M").collect();
         let tmp_pass = tmp_vec[0].to_string();
         let vec :Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
+        let mut tmp_vpn_ip = 0;
+        let mut tmp_vpn_port = vec[2].parse::<u16>().unwrap();
         if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
+            tmp_vpn_port = 0;
             address = vec[1].to_string();
             port = vec[2].parse::<u16>().unwrap();
         } else {
+            tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
             let test_str = common::sync_valid_routes::GetValidRoutes();
             let route_vec: Vec<&str> = test_str.split(",").collect();
             if (route_vec.len() >= 2) {
@@ -104,30 +107,19 @@ impl UdpOutboundHandler for Handler {
             }
         }
 
-        let server_addr = SocksAddr::try_from((&address, port))?;
+        let server_addr = SocksAddr::try_from((&address.clone(), port))?;
         let socket = if let Some(OutboundTransport::Datagram(socket)) = transport {
             socket
         } else {
             return Err(io::Error::new(io::ErrorKind::Other, "invalid input"));
         };
 
-
-        let vec :Vec<&str> = tmp_pass.split("-").collect();
         let tmp_ps = vec[0].to_string();// String::from("36e9bdb0e851b567016b2f4dbe6a72f08edb3922d82e09c94b48f26392a39a81");
-        let tmp_vpn_ip = vec[1].parse::<u32>().unwrap();
-        let mut tmp_vpn_port = vec[2].parse::<u16>().unwrap();
         let tmp_pk = vec[3];
         let tmp_ver = vec[4];
         let mut tmp_ex_route_ip = 0;
         let mut tmp_ex_route_port = 0;
-        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
-            tmp_vpn_port = 0;
-            tmp_ex_route_ip = vec[5].parse::<u32>().unwrap();
-            tmp_ex_route_port = vec[6].parse::<u16>().unwrap();
-        }
-        
         let dgram = ShadowedDatagram::new(&self.cipher, &tmp_ps)?;
-
         let destination = match &sess.destination {
             SocksAddr::Domain(domain, port) => {
                 Some(SocksAddr::Domain(domain.to_owned(), port.to_owned()))
@@ -146,7 +138,7 @@ impl UdpOutboundHandler for Handler {
             ver: tmp_ver.to_string(),
             ex_route_ip: tmp_ex_route_ip,
             ex_route_port: tmp_ex_route_port,
-            address: self.address.clone(),
+            address: address,
         }))
     }
 }
@@ -249,12 +241,15 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         let ciphertext = self.dgram.encrypt(buf2).map_err(|_| shadow::crypto_err())?;
         let n2: u8 = thread_rng().gen_range(6..16);
         let ex_hash = common::sync_valid_routes::GetResponseHash(self.address.clone());
-        if (decode_hash.eq("")) {
-            panic("error.");
+        let mut test_str = "response hash: ".to_string();
+        test_str += &ex_hash.clone();
+        test_str += &self.address.clone();
+        common::sync_valid_routes::SetValidRoutes(test_str);
+        if (ex_hash.eq("")) {
+            panic!("error.");
         }
 
         let decode_hash = hex::decode(ex_hash).expect("Decoding failed");
-        
         let mut all_len = 32 + n2 + 1 + 32;
         let mut buffer1 = BytesMut::with_capacity(all_len as usize);
         let mut head_size = 0;
