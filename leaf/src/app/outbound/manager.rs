@@ -163,7 +163,7 @@ impl OutboundManager {
                     let pk_str = vec[3].to_string();
             
                     crate::common::sync_valid_routes::StartThread(pk_str.clone());
-                    let tcp = Box::new(shadowsocks::outbound::TcpHandler {
+                    let mut tcp = Box::new(shadowsocks::outbound::TcpHandler {
                         address: settings.address.clone(),
                         port: settings.port as u16,
                         cipher: settings.method.clone(),

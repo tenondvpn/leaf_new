@@ -74,6 +74,11 @@ impl TcpOutboundHandler for Handler {
         let tmp_pass = tmp_vec[0].to_string();
         let vec :Vec<&str> = tmp_pass.split("-").collect(); 
         let tmp_ps = vec[0].to_string();
+        let mut address = self.address.clone();
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
+            address = vec[1].to_string();
+        }
+
         let ver = vec[4].to_string();
         let mut pk_len = vec[3].len() as u32;
         if (pk_len > 66) {
@@ -149,14 +154,18 @@ impl TcpOutboundHandler for Handler {
         buffer1.put_u16(pk_len.try_into().unwrap());
         if (pk_len > 68) {
             let pk_str = hex::decode(vec[3]).expect("Decoding failed");
-            let ex_hash = common::sync_valid_routes::GetResponseHash(self.address.clone());
+            let ex_hash = common::sync_valid_routes::GetResponseHash(address.clone());
             if (ex_hash.eq("")) {
                 let mut test_str = hex::encode(pk_str.clone());
                 let mut hasher = Sha256::new();
                 hasher.update(&pk_str.clone());
                 let result = hasher.finish();
                 let result_str = hex::encode(result);
-                common::sync_valid_routes::SetResponseHash(self.address.clone(), result_str);
+                let mut test_hash = "set hash: ".to_string();
+                test_hash += &address.clone();
+                test_hash += &result_str.clone();
+                common::sync_valid_routes::SetValidRoutes(test_hash);
+                common::sync_valid_routes::SetResponseHash(address.clone(), result_str);
             }
             
             buffer1.put_slice(&pk_str);
