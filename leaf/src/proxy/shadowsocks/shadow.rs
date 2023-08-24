@@ -1,5 +1,3 @@
-use std::mem::MaybeUninit;
-use std::{cmp::min, io, pin::Pin};
 use crate::common;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, Bytes, BytesMut};
@@ -9,12 +7,15 @@ use futures::{
 };
 use log::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::mem::MaybeUninit;
+use std::{cmp::min, io, pin::Pin};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use crate::common::crypto::{
     aead::{AeadCipher, AeadDecryptor, AeadEncryptor},
     Cipher, Decryptor, Encryptor, SizedCipher,
 };
+use crate::proxy::shadowsocks::ss_router::consume_and_refresh_routes;
 
 use super::crypto::{hkdf_sha1, kdf, ShadowsocksNonceSequence};
 
@@ -187,6 +188,7 @@ where
                         // there're unread data, continues in next poll
                         self.read_state = ReadState::PendingData(n - to_read);
                     } else {
+                        consume_and_refresh_routes(buf);
                         // all data consumed, ready to read next chunk
                         self.read_state = ReadState::WaitingLength;
                     }
@@ -218,7 +220,7 @@ where
                     for i in 0..salt_size {
                         self.write_buf[i] = rng.gen();
                     }
-
+                    // privateKey =  RandomSalt + Psk + SubKeyTag + KeyLen
                     let key = hkdf_sha1(
                         &self.psk,
                         &self.write_buf[..salt_size],
@@ -228,6 +230,7 @@ where
                     .map_err(|_| crypto_err())?;
                     let nonce =
                         super::crypto::ShadowsocksNonceSequence::new(self.cipher.nonce_len());
+                    // our case nonce is empty
                     let enc = self
                         .cipher
                         .encryptor(&key, nonce)
@@ -269,6 +272,7 @@ where
                     me.write_buf.reserve(piece1_size);
                     unsafe { me.write_buf.set_len(2) };
                     BigEndian::write_u16(&mut me.write_buf[..2], consume_len as u16);
+                    // piece1_size = payLoad Length + tag_length
                     enc.encrypt(&mut me.write_buf).map_err(|_| crypto_err())?;
                     let mut piece2 = me.write_buf.split_off(piece1_size);
 
