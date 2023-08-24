@@ -5,3 +5,4 @@ pub mod shadow;
 pub mod inbound;
 #[cfg(feature = "outbound-shadowsocks")]
 pub mod outbound;
+mod ss_router;

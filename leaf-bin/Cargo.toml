@@ -10,7 +10,7 @@ path = "src/main.rs"
 
 [features]
 default = [
-    "default-ring",
+    "default-openssl",
 ]
 
 default-ring = [

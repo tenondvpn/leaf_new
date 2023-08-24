@@ -1,19 +1,24 @@
-use std::io;
 extern crate rand;
+
+use std::io;
 use std::net::Ipv4Addr;
-use rand::Rng;
-use rand::thread_rng;
-use rand::distributions::Alphanumeric;
+
 use async_trait::async_trait;
-use crate::common;
-use tokio::io::AsyncWriteExt;
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{BufMut, BytesMut};
 use openssl::sha::Sha256;
-use super::shadow::ShadowedStream;
+use rand::distributions::Alphanumeric;
+use rand::thread_rng;
+use rand::Rng;
+use tokio::io::AsyncWriteExt;
+
+use crate::common;
+use crate::proxy::shadowsocks::ss_router::get_routes_hash_head;
 use crate::{
     proxy::*,
     session::{Session, SocksAddrWireType},
 };
+
+use super::shadow::ShadowedStream;
 
 pub struct Handler {
     pub address: String,
@@ -29,7 +34,7 @@ impl TcpOutboundHandler for Handler {
     fn connect_addr(&self) -> Option<OutboundConnect> {
         let tmp_vec: Vec<&str> = self.password.split("M").collect();
         let tmp_pass = tmp_vec[0].to_string();
-        let vec :Vec<&str> = tmp_pass.split("-").collect();
+        let vec: Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
         if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
@@ -69,10 +74,11 @@ impl TcpOutboundHandler for Handler {
         sess: &'a Session,
         stream: Option<Self::Stream>,
     ) -> io::Result<Self::Stream> {
-        let mut src_stream = stream.ok_or_else(|| io::Error::new(io::ErrorKind::Other, "invalid input"))?;
+        let mut src_stream =
+            stream.ok_or_else(|| io::Error::new(io::ErrorKind::Other, "invalid input"))?;
         let tmp_vec: Vec<&str> = self.password.split("M").collect();
         let tmp_pass = tmp_vec[0].to_string();
-        let vec :Vec<&str> = tmp_pass.split("-").collect(); 
+        let vec: Vec<&str> = tmp_pass.split("-").collect();
         let tmp_ps = vec[0].to_string();
         let mut address = self.address.clone();
         if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
@@ -114,7 +120,8 @@ impl TcpOutboundHandler for Handler {
                                 ip_split[0].parse::<u8>().unwrap(),
                                 ip_split[1].parse::<u8>().unwrap(),
                                 ip_split[2].parse::<u8>().unwrap(),
-                                ip_split[3].parse::<u8>().unwrap());
+                                ip_split[3].parse::<u8>().unwrap(),
+                            );
                             let ip_int = addr.into();
                             let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
                             all_len += 6;
@@ -142,7 +149,7 @@ impl TcpOutboundHandler for Handler {
             buffer1.put_u32(vpn_ip);
             buffer1.put_u16(vpn_port);
             head_size += 6;
-        } 
+        }
 
         buffer1.put_u8(n2);
         let rand_string: String = thread_rng()
@@ -167,14 +174,14 @@ impl TcpOutboundHandler for Handler {
                 common::sync_valid_routes::SetValidRoutes(test_hash);
                 common::sync_valid_routes::SetResponseHash(address.clone(), result_str);
             }
-            
+
             buffer1.put_slice(&pk_str);
         } else {
             let pk_str = vec[3].to_string();
             let pk_str = String::from(pk_str.clone());
             buffer1.put_slice(pk_str[..].as_bytes());
         }
-        
+
         buffer1.put_u8(19);
         let ver_str = String::from(ver.clone());
         buffer1.put_slice(ver_str[..].as_bytes());
@@ -201,6 +208,9 @@ impl TcpOutboundHandler for Handler {
         let mut buf = BytesMut::new();
         sess.destination
             .write_buf(&mut buf, SocksAddrWireType::PortLast);
+
+        let routes_data = get_routes_hash_head();
+        stream.write_all(&routes_data).await?;
         stream.write_all(&buf).await?;
         Ok(Box::new(stream))
     }
