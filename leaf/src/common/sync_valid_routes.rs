@@ -1,7 +1,7 @@
-use std::thread;
-use std::time::Duration;
-use std::process;
-use std::panic;
+
+
+
+
 //extern crate easy_http_request;
 use std::collections::HashMap;
 
@@ -17,7 +17,7 @@ lazy_static! {
 
 pub fn StartThread(id: String) {
     let mut v = started.lock().unwrap();
-    if (*v > 0) {
+    if *v > 0 {
         return;
     }
 
@@ -78,7 +78,7 @@ pub fn SetResponseHash(svr_add: String, val: String) {
 }
 
 pub fn GetResponseHash(svr_add: String) -> String {
-    let mut v = connection_map.lock().unwrap();
+    let v = connection_map.lock().unwrap();
     let tmp = "".to_string();
     let val = v.get(&svr_add).unwrap_or(&tmp);
     val.to_string()

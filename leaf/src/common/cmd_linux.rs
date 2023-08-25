@@ -118,7 +118,7 @@ pub fn get_default_interface() -> Result<String> {
 pub fn add_interface_ipv4_address(
     name: &str,
     addr: Ipv4Addr,
-    gw: Ipv4Addr,
+    _gw: Ipv4Addr,
     mask: Ipv4Addr,
 ) -> Result<()> {
     Command::new("ip")
@@ -208,7 +208,7 @@ pub fn add_default_ipv6_route(gateway: Ipv6Addr, interface: String, primary: boo
 }
 
 pub fn delete_default_ipv4_route(ifscope: Option<String>) -> Result<()> {
-    if let Some(ifscope) = ifscope {
+    if let Some(_ifscope) = ifscope {
         Command::new("ip")
             .arg("route")
             .arg("del")
@@ -231,7 +231,7 @@ pub fn delete_default_ipv4_route(ifscope: Option<String>) -> Result<()> {
 }
 
 pub fn delete_default_ipv6_route(ifscope: Option<String>) -> Result<()> {
-    if let Some(ifscope) = ifscope {
+    if let Some(_ifscope) = ifscope {
         Command::new("ip")
             .arg("-6")
             .arg("route")

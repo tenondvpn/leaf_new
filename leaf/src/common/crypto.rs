@@ -2,14 +2,14 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use bytes::BytesMut;
 
-use std::ffi::CString;
-use std::ptr::null;
+
+
+
 use std::mem;
 use std::str;
-use std::slice;
-use crate::common;
+
+
 
 pub struct SM4Key {
     pub rk: [u32; 32],
@@ -194,7 +194,7 @@ pub mod aead {
             // TODO in-place?
             if self.cipher_name.eq("sm4-gcm") {
                 let plain_txt = in_out.as_ref();
-                let mut out_vec = vec![1u8; plain_txt.len()];
+                let out_vec = vec![1u8; plain_txt.len()];
                 unsafe {
                     let res_size = sm4_gcm_encrypt(
                         &self.sm4_key,
@@ -207,7 +207,7 @@ pub mod aead {
                         out_vec.as_ptr(),
                         16,
                         tag.as_ptr());
-                    if (res_size != 1) {
+                    if res_size != 1 {
                         panic!("sm4 gcm encrypt failed!");
                     }
                 }
@@ -277,9 +277,9 @@ pub mod aead {
                 let in_out_ref = in_out.as_ref();
                 let data = &in_out_ref[..in_out_ref.len() - self.tag_len];
                 let tag = &in_out_ref[in_out_ref.len() - self.tag_len..];
-                let mut out_vec = vec![1u8; data.len()];
+                let out_vec = vec![1u8; data.len()];
                 unsafe {
-                    let dec_size = sm4_gcm_decrypt(
+                    let _dec_size = sm4_gcm_decrypt(
                         &self.sm4_key,
                         nonce.as_ptr(),
                         nonce.len() as usize,
