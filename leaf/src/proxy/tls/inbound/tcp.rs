@@ -1,6 +1,6 @@
-use std::fs::File;
-use std::io::{self, BufReader};
-use std::path::Path;
+
+
+
 
 use anyhow::Result;
 
@@ -38,7 +38,7 @@ fn load_keys(path: &Path) -> io::Result<Vec<PrivateKey>> {
 }
 
 impl Handler {
-    pub fn new(certificate: String, certificate_key: String) -> Result<Self> {
+    pub fn new(_certificate: String, _certificate_key: String) -> Result<Self> {
         #[cfg(feature = "rustls-tls")]
         {
             let certs = load_certs(Path::new(&certificate))?;
@@ -63,8 +63,8 @@ impl TcpInboundHandler for Handler {
 
     async fn handle<'a>(
         &'a self,
-        sess: Session,
-        stream: Self::TStream,
+        _sess: Session,
+        _stream: Self::TStream,
     ) -> std::io::Result<InboundTransport<Self::TStream, Self::TDatagram>> {
         #[cfg(feature = "rustls-tls")]
         {
