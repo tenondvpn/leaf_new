@@ -1,0 +1,19 @@
+[package]
+name = "leaf-android"
+version = "0.1.0"
+authors = ["ghost <noreply>"]
+edition = "2018"
+
+[lib]
+name = "leafandroid"
+path = "src/lib.rs"
+crate-type = ["dylib"]
+
+[features]
+default = [
+    "leaf/default-openssl"
+]
+
+[dependencies]
+leaf = { path = "../leaf", default-features = true, optional = true }
+jni = { version = "0.19", default-features = false }
