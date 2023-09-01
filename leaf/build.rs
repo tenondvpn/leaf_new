@@ -90,4 +90,21 @@ fn main() {
             .run()
             .expect("protoc");
     }
+    if env::var("PROTO_GEN_ZJ").is_ok() {
+        protoc_rust::Codegen::new()
+            .out_dir("src/proto/server_config/")
+            .inputs(&[
+                "src/proto/server_config/server_config.proto",
+                // 添加更多的 .proto 文件路径
+            ])
+            .customize(protoc_rust::Customize {
+                expose_oneof: Some(true),
+                expose_fields: Some(true),
+                generate_accessors: Some(true),
+                lite_runtime: Some(true),
+                ..Default::default()
+            })
+            .run()
+            .expect("protoc");
+    }
 }

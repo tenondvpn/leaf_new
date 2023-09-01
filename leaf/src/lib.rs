@@ -34,6 +34,7 @@ pub mod option;
 pub mod proxy;
 pub mod session;
 pub mod util;
+pub mod proto;
 
 #[cfg(any(target_os = "ios", target_os = "macos", target_os = "android"))]
 pub mod mobile;
@@ -302,6 +303,10 @@ pub fn is_running(key: RuntimeId) -> bool {
 
 pub fn get_status() -> String {
     common::sync_valid_routes::GetValidRoutes()
+}
+
+pub fn get_route_data() -> String {
+    proxy::shadowsocks::ss_router::get_route_data()
 }
 
 pub fn test_config(config_path: &str) -> Result<(), Error> {

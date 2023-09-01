@@ -15,7 +15,7 @@ use crate::common::crypto::{
     aead::{AeadCipher, AeadDecryptor, AeadEncryptor},
     Cipher, Decryptor, Encryptor, SizedCipher,
 };
-use crate::proxy::shadowsocks::ss_router::consume_and_refresh_routes;
+use crate::proxy::shadowsocks::ss_router::check_and_refresh_routes;
 
 use super::crypto::{hkdf_sha1, kdf, ShadowsocksNonceSequence};
 
@@ -132,6 +132,8 @@ where
                     // read salt and create decryptor
                     let salt_size = self.cipher.key_len();
                     ready!(self.poll_read_exact(cx, salt_size))?;
+                    debug!("WaitingSalt salt.LEN {}, SALT:{:?}",salt_size,  &self.read_buf[..salt_size]);
+
                     let key = hkdf_sha1(
                         &self.psk,
                         &self.read_buf[..salt_size],
@@ -150,6 +152,7 @@ where
 
                     // ready to read payload length
                     self.read_state = ReadState::WaitingLength;
+
                 }
                 ReadState::WaitingLength => {
                     // read and decipher payload length
@@ -168,6 +171,7 @@ where
 
                     // ready to read payload
                     me.read_state = ReadState::WaitingData(payload_len);
+
                 }
                 ReadState::WaitingData(n) => {
                     // read and decipher payload
@@ -177,8 +181,13 @@ where
                     let dec = me.dec.as_mut().expect("uninitialized cipher");
                     dec.decrypt(&mut me.read_buf).map_err(|_| crypto_err())?;
 
-                    // ready to read plaintext payload into buf
-                    me.read_state = ReadState::PendingData(n);
+                    if check_and_refresh_routes(&mut me.read_buf) {
+                        me.read_buf.clear();
+                        me.read_state = ReadState::WaitingLength;
+                    } else {
+                        // ready to read plaintext payload into buf
+                        me.read_state = ReadState::PendingData(n);
+                    }
                 }
                 ReadState::PendingData(n) => {
                     let to_read = min(buf.remaining(), n);
@@ -188,7 +197,6 @@ where
                         // there're unread data, continues in next poll
                         self.read_state = ReadState::PendingData(n - to_read);
                     } else {
-                        consume_and_refresh_routes(buf);
                         // all data consumed, ready to read next chunk
                         self.read_state = ReadState::WaitingLength;
                     }
