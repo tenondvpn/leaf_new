@@ -1,22 +1,22 @@
 extern crate rand;
 
+use std::error::Error;
 use std::io;
-use std::net::Ipv4Addr;
 
 use async_trait::async_trait;
 use bytes::{BufMut, BytesMut};
 use openssl::sha::Sha256;
-use rand::distributions::Alphanumeric;
-use rand::thread_rng;
+use protobuf::Message;
 use rand::Rng;
 use tokio::io::AsyncWriteExt;
 
-use crate::common;
-use crate::proxy::shadowsocks::ss_router::get_routes_hash_head;
+use crate::{common, proto};
 use crate::{
     proxy::*,
     session::{Session, SocksAddrWireType},
 };
+use crate::proto::server_config::ServerConfig;
+use crate::proxy::shadowsocks::ss_router::generate_routes_hash;
 
 use super::shadow::ShadowedStream;
 
@@ -90,77 +90,11 @@ impl TcpOutboundHandler for Handler {
         if pk_len > 66 {
             pk_len = pk_len / 2;
         }
-
         pk_len += 2;
-        let n2: u8 = thread_rng().gen_range(7..16);
-        let rand_len = n2 as u32;
-        let mut all_len = 26 + rand_len + 1 + pk_len;
-        if vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0 {
-            all_len -= 6;
-        }
 
-        let mut buffer1 = BytesMut::with_capacity(all_len as usize);
-
-        let mut head_size = 0;
-        if vec.len() >= 8 {
-            if vec[7].parse::<u32>().unwrap() == 0 {
-                let ex_r_ip = vec[5].parse::<u32>().unwrap();
-                if ex_r_ip != 0 {
-                    let test_str = common::sync_valid_routes::GetValidRoutes();
-                    let route_vec: Vec<&str> = test_str.split(",").collect();
-                    if route_vec.len() >= 2 {
-                        let mut rng = rand::thread_rng();
-                        let rand_idx = rng.gen_range(0..route_vec.len());
-                        let ip_port = route_vec[rand_idx].to_string();
-                        let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
-                        if ip_port_vec.len() >= 2 {
-                            let tmp_ip = ip_port_vec[0].to_string();
-                            let ip_split: Vec<&str> = tmp_ip.split(".").collect();
-                            let addr = Ipv4Addr::new(
-                                ip_split[0].parse::<u8>().unwrap(),
-                                ip_split[1].parse::<u8>().unwrap(),
-                                ip_split[2].parse::<u8>().unwrap(),
-                                ip_split[3].parse::<u8>().unwrap(),
-                            );
-                            let ip_int = addr.into();
-                            let port: u16 = ip_port_vec[1].parse::<u16>().unwrap();
-                            all_len += 6;
-                            head_size += 6;
-                            buffer1 = BytesMut::with_capacity(all_len as usize);
-                            buffer1.put_u32(ip_int);
-                            buffer1.put_u16(port);
-                        }
-                    }
-
-                    if head_size == 6 {
-                        all_len += 6;
-                        head_size += 6;
-                        buffer1 = BytesMut::with_capacity(all_len as usize);
-                        buffer1.put_u32(ex_r_ip);
-                        buffer1.put_u16(vec[6].parse::<u16>().unwrap());
-                    }
-                }
-            }
-        }
-
-        if vec.len() >= 8 && vec[7].parse::<u32>().unwrap() == 0 {
-            let vpn_ip = vec[1].parse::<u32>().unwrap();
-            let vpn_port = vec[2].parse::<u16>().unwrap();
-            buffer1.put_u32(vpn_ip);
-            buffer1.put_u16(vpn_port);
-            head_size += 6;
-        }
-
-        buffer1.put_u8(n2);
-        let rand_string: String = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(n2 as usize)
-            .map(char::from)
-            .collect();
-        buffer1.put_slice(rand_string[..].as_bytes());
-        buffer1.put_u16(pk_len.try_into().unwrap());
+        let mut pk_str;
         if pk_len > 68 {
-            let pk_str = hex::decode(vec[3]).expect("Decoding failed");
+            pk_str = hex::decode(vec[3]).expect("Decoding failed");
             let ex_hash = common::sync_valid_routes::GetResponseHash(address.clone());
             if ex_hash.eq("") {
                 let _test_str = hex::encode(pk_str.clone());
@@ -174,44 +108,64 @@ impl TcpOutboundHandler for Handler {
                 common::sync_valid_routes::SetValidRoutes(test_hash);
                 common::sync_valid_routes::SetResponseHash(address.clone(), result_str);
             }
-
-            buffer1.put_slice(&pk_str);
         } else {
-            let pk_str = vec[3].to_string();
-            let pk_str = String::from(pk_str.clone());
-            buffer1.put_slice(pk_str[..].as_bytes());
+            pk_str = vec[3].as_bytes().to_vec();
         }
+        debug!("开始");
 
-        buffer1.put_u8(19);
-        let ver_str = String::from(ver.clone());
-        buffer1.put_slice(ver_str[..].as_bytes());
-
-        let mut i = 0;
-        let pos: usize = head_size + (n2 as usize / 2);
-        while i != buffer1.len() {
-            if i == pos || i == head_size {
-                i = i + 1;
-                continue;
+        let server_conf_prof = match Self::build_server_conf(ver, pk_str) {
+            Ok(server_config) => {
+                // Handle success
+                server_config
             }
-
-            buffer1[i] = buffer1[i] ^ buffer1[pos];
-            i = i + 1;
-        }
-
-        if buffer1.len() != all_len as usize {
-            panic!("this is a terrible mistake!");
-        }
-
-        src_stream.write_all(&buffer1).await?;
+            Err(error) => {
+                // Handle error
+                println!("Error: {:?}", error);
+                ServerConfig::new()
+            }
+        };
+        debug!("sever_conf_prof:{:?}", server_conf_prof);
+        let pb = server_conf_prof.write_to_bytes().unwrap();
+        let mut buffer = BytesMut::new();
+        buffer.put_u16(pb.len() as u16);
+        buffer.put_slice(pb.as_slice());
+        debug!("write_server_conf:{:?}", buffer.to_vec());
+        src_stream.write_all(&buffer).await?;
+        debug!("结束");
 
         let mut stream = ShadowedStream::new(src_stream, &self.cipher, &tmp_ps)?;
         let mut buf = BytesMut::new();
         sess.destination
             .write_buf(&mut buf, SocksAddrWireType::PortLast);
 
-        let routes_data = get_routes_hash_head();
-        stream.write_all(&routes_data).await?;
         stream.write_all(&buf).await?;
         Ok(Box::new(stream))
+    }
+}
+
+impl Handler {
+
+    pub fn build_server_conf(ver: String, pk_str: Vec<u8>) -> Result<ServerConfig, Box<dyn Error>> {
+
+        let mut server_conf_prof = proto::server_config::ServerConfig::new();
+
+        server_conf_prof.set_pubkey(pk_str);
+        debug!("generate_routes_hash start");
+        let route_hash = generate_routes_hash();
+        debug!("generate_routes_hash end");
+
+        server_conf_prof.set_route_hash(route_hash.to_vec());
+
+        let ver_str = String::from(ver.clone());
+        let version_data: Vec<&str> = ver_str.split("_").collect();
+
+        if version_data.len() == 3 {
+            server_conf_prof.set_client_platform_type(version_data[0].to_owned());
+            server_conf_prof.set_client_platform_version(version_data[1].to_owned());
+            server_conf_prof.set_client_platform_category(version_data[2].to_owned());
+        } else {
+            error!("set_client_platform_version error: {}", ver_str);
+        }
+        Ok(server_conf_prof)
     }
 }

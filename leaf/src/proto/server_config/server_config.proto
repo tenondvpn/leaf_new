@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package lego.service.protobuf;
+
+message ServerConfig {
+    optional bytes  pubkey = 1;
+    optional bytes  route_hash = 2;           //32 bytes,  or 1byte
+    optional string enc_method = 3;           //aes-256-gcm,aes-128-gcm,chacha20-ietf-poly1305,xchacha20-ietf-poly1305,sm4-gcm
+    optional string client_platform_type = 4; //ios,mac,chg,win,and,
+    optional string client_platform_version = 5;//6.3.2
+    optional string client_platform_category = 6;//official
+};
+
+message Route {
+    optional string route = 1;    //pk1:ip1:svr_port1,pk2:ip2:svr_port2   example: 03b9...e8a1:10.101.20.31:19801
+    optional bytes  route_hash = 2;//only server calculate this hash value, client only pass-through. 32 bytes, or 1byte?
+};

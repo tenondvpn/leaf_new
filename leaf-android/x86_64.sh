@@ -40,7 +40,7 @@ android_tools="$NDK_HOME/toolchains/llvm/prebuilt/$HOST_OS-$HOST_ARCH/bin"
 api=21
 
 #for target in x86_64-linux-android aarch64-linux-android i686-linux-android armv7-linux-androideabi; do
- for target in aarch64-linux-android x86_64-linux-android; do
+ for target in  x86_64-linux-android; do
 	case $target in
         'armv7-linux-androideabi')
 			export CC_ARMV7_linux_android="$android_tools/armv7a-linux-androideabi${api}-clang"
