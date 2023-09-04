@@ -59,3 +59,13 @@ pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getStatus(
         .expect("Couldn't create java string!");
     output.into_inner()
 }
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getRouteData(
+    env: JNIEnv,
+    _: JClass, ) -> sys::jstring {
+    let output = env.new_string(leaf::get_route_data())
+        .expect("Couldn't create java string!");
+    output.into_inner()
+}
