@@ -116,6 +116,8 @@ auto-reload = ["notify"]
 ctrlc = ["tokio/signal"]
 
 [dependencies]
+third = { path = "../third"}
+
 # Common
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"

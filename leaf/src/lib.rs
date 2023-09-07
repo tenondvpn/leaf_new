@@ -7,34 +7,34 @@ use std::sync::Once;
 
 use anyhow::anyhow;
 use lazy_static::lazy_static;
-use thiserror::Error;
-use tokio::sync::mpsc;
-use tokio::sync::RwLock;
-
+use log::debug;
 #[cfg(feature = "auto-reload")]
 use notify::{
     event, Error as NotifyError, RecommendedWatcher, RecursiveMode, Result as NotifyResult, Watcher,
 };
+use thiserror::Error;
+use tokio::sync::mpsc;
+use tokio::sync::RwLock;
 
 use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
     nat_manager::NatManager, outbound::manager::OutboundManager, router::Router,
 };
-
-#[cfg(feature = "stat")]
-use crate::app::{stat_manager::StatManager, SyncStatManager};
+use third::zj_gm::sm::sm3_hash;
 
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
+#[cfg(feature = "stat")]
+use crate::app::{stat_manager::StatManager, SyncStatManager};
 
 pub mod app;
 pub mod common;
 pub mod config;
 pub mod option;
+pub mod proto;
 pub mod proxy;
 pub mod session;
 pub mod util;
-pub mod proto;
 
 #[cfg(any(target_os = "ios", target_os = "macos", target_os = "android"))]
 pub mod mobile;
@@ -306,6 +306,9 @@ pub fn get_status() -> String {
 }
 
 pub fn get_route_data() -> String {
+    debug!("get_route_data start");
+    let string = test_sm3_hash("1234");
+    debug!("get_route_data test_sm3_hash:{}", string);
     proxy::shadowsocks::ss_router::get_route_data()
 }
 
@@ -313,6 +316,12 @@ pub fn test_config(config_path: &str) -> Result<(), Error> {
     config::from_file(config_path)
         .map(|_| ())
         .map_err(Error::Config)
+}
+
+pub fn test_sm3_hash(text: &str) -> String {
+    let str = "1234";
+    let buf = sm3_hash(str);
+    hex::encode(buf)
 }
 
 fn new_runtime(opt: &RuntimeOption) -> Result<tokio::runtime::Runtime, Error> {
@@ -567,8 +576,9 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::thread;
+
+    use super::*;
 
     #[test]
     fn test_restart() {
@@ -603,5 +613,15 @@ Direct = direct
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_sm3() {
+        println!("aaaaaaaaaastr:");
+        let str = "123456";
+
+        let buf = sm3_hash(str);
+        println!("aaaaaaaaaastr:{}", str);
+        println!("aaaaaaaaaaabuf:{:?}", buf);
     }
 }
