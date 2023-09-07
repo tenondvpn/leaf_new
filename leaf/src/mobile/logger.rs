@@ -1,20 +1,15 @@
-use std::{
-    ffi,
-    io::{self, Write},
-};
+use std::io::{self, Write};
 
 use bytes::BytesMut;
 
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 //use super::bindings::{asl_log, ASL_LEVEL_NOTICE};
-
 #[cfg(target_os = "android")]
 //use super::bindings::{__android_log_print, android_LogPriority_ANDROID_LOG_VERBOSE};
-
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 fn log_out(data: &[u8]) {
     // unsafe {
-    //     let s = match ffi::CString::new(data) {
+    //     let s = match ffi-cpp::CString::new(data) {
     //         Ok(s) => s,
     //         Err(_) => return,
     //     };

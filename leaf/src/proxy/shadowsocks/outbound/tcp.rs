@@ -10,13 +10,13 @@ use protobuf::Message;
 use rand::Rng;
 use tokio::io::AsyncWriteExt;
 
+use crate::proto::server_config::ServerConfig;
+use crate::proxy::shadowsocks::ss_router::generate_routes_hash;
 use crate::{common, proto};
 use crate::{
     proxy::*,
     session::{Session, SocksAddrWireType},
 };
-use crate::proto::server_config::ServerConfig;
-use crate::proxy::shadowsocks::ss_router::generate_routes_hash;
 
 use super::shadow::ShadowedStream;
 
@@ -93,6 +93,7 @@ impl TcpOutboundHandler for Handler {
         pk_len += 2;
 
         let mut pk_str;
+        // todo
         if pk_len > 68 {
             pk_str = hex::decode(vec[3]).expect("Decoding failed");
             let ex_hash = common::sync_valid_routes::GetResponseHash(address.clone());
@@ -144,9 +145,7 @@ impl TcpOutboundHandler for Handler {
 }
 
 impl Handler {
-
     pub fn build_server_conf(ver: String, pk_str: Vec<u8>) -> Result<ServerConfig, Box<dyn Error>> {
-
         let mut server_conf_prof = proto::server_config::ServerConfig::new();
 
         server_conf_prof.set_pubkey(pk_str);

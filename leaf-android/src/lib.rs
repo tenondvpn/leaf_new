@@ -54,8 +54,9 @@ pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_isLeafRunn
 pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getStatus(
     env: JNIEnv,
     _: JClass,
-) -> sys::jstring  {
-    let output = env.new_string(leaf::get_status())
+) -> sys::jstring {
+    let output = env
+        .new_string(leaf::get_status())
         .expect("Couldn't create java string!");
     output.into_inner()
 }
@@ -64,8 +65,23 @@ pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getStatus(
 #[no_mangle]
 pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getRouteData(
     env: JNIEnv,
-    _: JClass, ) -> sys::jstring {
-    let output = env.new_string(leaf::get_route_data())
+    _: JClass,
+) -> sys::jstring {
+    let output = env
+        .new_string(leaf::get_route_data())
         .expect("Couldn't create java string!");
     output.into_inner()
+}
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_testSm3Hash(
+    env: JNIEnv,
+    _: JClass,
+    text: JString,
+) -> sys::jstring {
+    let test = env.get_string(text).unwrap().to_str().unwrap().to_owned();
+    let string = leaf::test_sm3_hash(&test);
+    env.new_string(string)
+        .expect("Couldn't create java string!")
+        .into_inner()
 }
