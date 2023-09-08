@@ -20,7 +20,7 @@ use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
     nat_manager::NatManager, outbound::manager::OutboundManager, router::Router,
 };
-use third::zj_gm::sm::sm3_hash;
+use third::zj_gm::sm::{sm3_hash, test_sm4};
 
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
@@ -322,6 +322,9 @@ pub fn test_sm3_hash(text: &str) -> String {
     let str = "1234";
     let buf = sm3_hash(str);
     hex::encode(buf)
+}
+pub fn a_test_sm4(text: &str) -> String {
+    test_sm4(text)
 }
 
 fn new_runtime(opt: &RuntimeOption) -> Result<tokio::runtime::Runtime, Error> {

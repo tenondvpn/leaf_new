@@ -9,7 +9,7 @@ use bytes::BytesMut;
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 fn log_out(data: &[u8]) {
     // unsafe {
-    //     let s = match ffi-cpp::CString::new(data) {
+    //     let s = match ffi::CString::new(data) {
     //         Ok(s) => s,
     //         Err(_) => return,
     //     };
