@@ -1,4 +1,7 @@
-use std::io::{self, Write};
+use std::{
+    ffi,
+    io::{self, Write},
+};
 
 use bytes::BytesMut;
 

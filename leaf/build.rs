@@ -47,6 +47,18 @@ fn main() {
     if os == "ios" || os == "macos" || os == "android" {
         generate_mobile_bindings();
     }
+    let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    if arch.eq("x86_64") && os.eq("linux") {
+        let libdir_path = PathBuf::from("../third/src/zj_gm")
+            .canonicalize()
+            .expect("cannot canonicalize path");
+        let trarget_lib_str = libdir_path.join("x86_64-linux");
+        println!(
+            "cargo:rustc-env=LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{}",
+            trarget_lib_str.to_str().unwrap()
+        );
+        println!("cargo:rustc-link-lib=smcrypto");
+    }
 
     if env::var("PROTO_GEN").is_ok() {
         // println!("cargo:rerun-if-changed=src/config/internal/config.proto");

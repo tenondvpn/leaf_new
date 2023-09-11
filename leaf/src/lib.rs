@@ -306,9 +306,6 @@ pub fn get_status() -> String {
 }
 
 pub fn get_route_data() -> String {
-    debug!("get_route_data start");
-    let string = test_sm3_hash("1234");
-    debug!("get_route_data test_sm3_hash:{}", string);
     proxy::shadowsocks::ss_router::get_route_data()
 }
 
