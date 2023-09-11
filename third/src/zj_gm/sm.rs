@@ -17,15 +17,62 @@ pub fn sm3_hash(str: &str) -> [u8; 32] {
     buf
 }
 
-pub fn gcm_encrypt_sm4() -> usize {
-    // gcm_encrypt(plain_txt.as_ptr(), 10 ,
-    //             out_txt.as_mut_ptr(),   Box::new(10).as_mut(),
-    //             tag.as_mut_ptr(),   Box::new(16).as_mut(),
-    //             key.as_ptr(), 16 ,
-    //             iv.as_ptr(), 16 ,
-    //             dec_txt.as_ptr(), 0,
-    //             padding_t_NO_PADDING, symmetric_cryptograph_t_SM4);
-    0
+pub fn gcm_encrypt_sm4(
+    plain_txt: &[u8],
+    out_txt: &mut [u8],
+    tag: &mut [u8],
+    key: &[u8],
+    iv: &[u8],
+) -> usize {
+    let mut result = 1;
+    unsafe {
+        result = gcm_encrypt(
+            plain_txt.as_ptr(),
+            plain_txt.len() as size_t,
+            out_txt.as_mut_ptr(),
+            Box::new(out_txt.len() as size_t).as_mut(),
+            tag.as_mut_ptr(),
+            Box::new(tag.len() as size_t).as_mut(),
+            key.as_ptr(),
+            key.len() as size_t,
+            iv.as_ptr(),
+            iv.len() as size_t,
+            iv.as_ptr(),
+            0,
+            padding_t_NO_PADDING,
+            symmetric_cryptograph_t_SM4,
+        );
+    }
+    result as usize
+}
+
+pub fn gcm_decrypt_sm4(
+    input: &[u8],
+    dec_txt: &mut [u8],
+    tag: &[u8],
+    key: &[u8],
+    iv: &[u8],
+) -> usize {
+    let mut result = 1;
+    unsafe {
+        result = gcm_decrypt(
+            input.as_ptr(),
+            input.len() as size_t,
+            dec_txt.as_mut_ptr(),
+            Box::new(dec_txt.len() as size_t).as_mut(),
+            tag.as_ptr(),
+            tag.len() as size_t,
+            key.as_ptr(),
+            key.len() as size_t,
+            iv.as_ptr(),
+            iv.len() as size_t,
+            iv.as_ptr(),
+            0,
+            padding_t_NO_PADDING,
+            symmetric_cryptograph_t_SM4,
+        );
+    }
+    result as usize
 }
 
 pub fn test_sm4(plain_txt: &str) -> String {
@@ -102,9 +149,9 @@ mod tests {
 
     #[test]
     fn a_test_sm4() {
-        let mut plain_txt = String::from("plain text");
+        let plain_txt = String::from("plain text");
 
-        let mut dec_str_buf = test_sm4(&plain_txt);
+        let dec_str_buf = test_sm4(&plain_txt);
         println!("dec str: {}", dec_str_buf);
     }
 }
