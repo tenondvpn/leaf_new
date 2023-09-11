@@ -1,4 +1,3 @@
-
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, Bytes, BytesMut};
 use futures::{
@@ -132,7 +131,11 @@ where
                     // read salt and create decryptor
                     let salt_size = self.cipher.key_len();
                     ready!(self.poll_read_exact(cx, salt_size))?;
-                    debug!("WaitingSalt salt.LEN {}, SALT:{:?}",salt_size,  &self.read_buf[..salt_size]);
+                    debug!(
+                        "WaitingSalt salt.LEN {}, SALT:{:?}",
+                        salt_size,
+                        &self.read_buf[..salt_size]
+                    );
 
                     let key = hkdf_sha1(
                         &self.psk,
@@ -152,7 +155,6 @@ where
 
                     // ready to read payload length
                     self.read_state = ReadState::WaitingLength;
-
                 }
                 ReadState::WaitingLength => {
                     // read and decipher payload length
@@ -171,7 +173,6 @@ where
 
                     // ready to read payload
                     me.read_state = ReadState::WaitingData(payload_len);
-
                 }
                 ReadState::WaitingData(n) => {
                     // read and decipher payload
