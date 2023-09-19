@@ -1,9 +1,14 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
+use bytes::BytesMut;
 use lazy_static::lazy_static;
 
+use crate::common;
+use std::ffi::CString;
 use std::mem;
+use std::ptr::null;
+use std::slice;
 use std::str;
 
 pub struct SM4Key {

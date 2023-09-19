@@ -1,6 +1,6 @@
-
+use std::fs::File;
 use std::io;
-
+use std::io::BufReader;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -38,7 +38,7 @@ impl Handler {
     pub fn new(
         server_name: String,
         alpns: Vec<String>,
-        _certificate: Option<String>,
+        certificate: Option<String>,
     ) -> Result<Self> {
         #[cfg(feature = "rustls-tls")]
         {
