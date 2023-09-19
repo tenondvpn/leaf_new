@@ -1,13 +1,13 @@
-
-
-
-
+use std::panic;
+use std::process;
+use std::thread;
+use std::time::Duration;
 //extern crate easy_http_request;
 use std::collections::HashMap;
 
 //use easy_http_request::DefaultHttpRequest;
-use std::sync::Mutex;
 use lazy_static::lazy_static;
+use std::sync::Mutex;
 lazy_static! {
     static ref valid_routes: Mutex<String> = Mutex::new(String::from(""));
     static ref valid_tmp_id: Mutex<String> = Mutex::new(String::from(""));
@@ -17,7 +17,7 @@ lazy_static! {
 
 pub fn StartThread(id: String) {
     let mut v = started.lock().unwrap();
-    if *v > 0 {
+    if (*v > 0) {
         return;
     }
 
@@ -53,7 +53,7 @@ pub fn StartThread(id: String) {
                     println!("file not found \n{:?}",e);   // 处理错误
                 }
             }
-                
+
             thread::sleep(Duration::from_millis(10000));
         }
     });
@@ -74,11 +74,11 @@ pub fn SetValidRoutes(data: String) {
 
 pub fn SetResponseHash(svr_add: String, val: String) {
     let mut v = connection_map.lock().unwrap();
-   v.insert(svr_add, val);
+    v.insert(svr_add, val);
 }
 
 pub fn GetResponseHash(svr_add: String) -> String {
-    let v = connection_map.lock().unwrap();
+    let mut v = connection_map.lock().unwrap();
     let tmp = "".to_string();
     let val = v.get(&svr_add).unwrap_or(&tmp);
     val.to_string()

@@ -37,24 +37,24 @@ impl TcpOutboundHandler for Handler {
         let vec: Vec<&str> = tmp_pass.split("-").collect();
         let mut address = "".to_string();
         let mut port: u16 = 0;
-        if vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0 {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             address = vec[1].to_string();
             port = vec[2].parse::<u16>().unwrap();
         } else {
             let test_str = common::sync_valid_routes::GetValidRoutes();
             let route_vec: Vec<&str> = test_str.split(",").collect();
-            if route_vec.len() >= 2 {
+            if (route_vec.len() >= 2) {
                 let mut rng = rand::thread_rng();
                 let rand_idx = rng.gen_range(0..route_vec.len());
                 let ip_port = route_vec[rand_idx].to_string();
                 let ip_port_vec: Vec<&str> = ip_port.split(":").collect();
-                if ip_port_vec.len() >= 2 {
+                if (ip_port_vec.len() >= 2) {
                     address = ip_port_vec[0].to_string();
                     port = ip_port_vec[1].parse::<u16>().unwrap();
                 }
             }
 
-            if port == 0 {
+            if (port == 0) {
                 let tmp_route = tmp_vec[1].to_string();
                 let route_vec: Vec<&str> = tmp_route.split("-").collect();
                 let mut rng = rand::thread_rng();
@@ -81,13 +81,13 @@ impl TcpOutboundHandler for Handler {
         let vec: Vec<&str> = tmp_pass.split("-").collect();
         let tmp_ps = vec[0].to_string();
         let mut address = self.address.clone();
-        if vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0 {
+        if (vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0) {
             address = vec[1].to_string();
         }
 
         let ver = vec[4].to_string();
         let mut pk_len = vec[3].len() as u32;
-        if pk_len > 66 {
+        if (pk_len > 66) {
             pk_len = pk_len / 2;
         }
         pk_len += 2;
@@ -97,8 +97,8 @@ impl TcpOutboundHandler for Handler {
         if pk_len > 68 {
             pk_str = hex::decode(vec[3]).expect("Decoding failed");
             let ex_hash = common::sync_valid_routes::GetResponseHash(address.clone());
-            if ex_hash.eq("") {
-                let _test_str = hex::encode(pk_str.clone());
+            if (ex_hash.eq("")) {
+                let mut test_str = hex::encode(pk_str.clone());
                 let mut hasher = Sha256::new();
                 hasher.update(&pk_str.clone());
                 let result = hasher.finish();
