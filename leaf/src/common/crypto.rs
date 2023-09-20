@@ -92,7 +92,7 @@ pub trait NonceSequence: Sync + Send + Unpin {
 
 #[cfg(feature = "openssl-aead")]
 pub mod aead {
-    use log::{debug, error};
+    use log::{debug, error, trace};
     use openssl::symm;
     use third::zj_gm::sm::{gcm_decrypt_sm4, gcm_encrypt_sm4};
 
@@ -228,8 +228,8 @@ pub mod aead {
 
                 (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
                 in_out.extend(&tag);
-                debug!("out_vec:{:?}", out_vec.as_slice());
-                debug!("tag:{:?}", tag.as_slice());
+                trace!("out_vec:{:?}", hex::encode(&out_vec));
+                trace!("tag:{:?}", hex::encode(&tag));
             } else {
                 let ciphertext = symm::encrypt_aead(
                     self.cipher,
@@ -294,6 +294,9 @@ pub mod aead {
                 let in_out_ref_len = in_out_ref.len();
                 let data = &in_out_ref[..in_out_ref_len - self.tag_len];
                 let tag = &in_out_ref[in_out_ref_len - self.tag_len..];
+                trace!("dec data:{:?}", hex::encode(data));
+                trace!("dec tag:{:?}", hex::encode(tag));
+
                 let mut out_vec = vec![1u8; data.len()];
 
                 match gcm_decrypt_sm4(
@@ -308,8 +311,8 @@ pub mod aead {
                         error!("gcm_decrypt_sm4 decryption failed code: {}", other);
                     }
                 };
+                trace!("dec out_vec:{:?}", hex::encode(out_vec));
                 (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
-                debug!("out_vec:{:?}", out_vec.as_slice());
             } else {
                 let in_out_ref = in_out.as_ref();
                 let data = &in_out_ref[..in_out_ref.len() - self.tag_len];
