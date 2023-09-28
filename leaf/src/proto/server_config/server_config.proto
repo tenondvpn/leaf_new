@@ -1,15 +1,47 @@
 syntax = "proto2";
 
-package lego.service.protobuf;
-
 message ServerConfig {
-    optional bytes  pubkey = 1;
-    optional bytes  route_hash = 2;           //32 bytes,  or 1byte
-    optional string enc_method = 3;           //aes-256-gcm,aes-128-gcm,chacha20-ietf-poly1305,xchacha20-ietf-poly1305,sm4-gcm
-    optional string client_platform_type = 4; //ios,mac,chg,win,and,
-    optional string client_platform_version = 5;//6.3.2
-    optional string client_platform_category = 6;//official
+    optional bytes pubkey = 1;
+    optional EncMethodEnum enc_method = 2;           //aes-256-gcm,aes-128-gcm,chacha20-ietf-poly1305,xchacha20-ietf-poly1305,sm4-gcm
+    optional string client_platform_type = 3; //ios,mac,chg,win,and,
+    optional string client_platform_version = 4;//6.3.2
+    optional string client_platform_category = 5;//official
+    optional bytes random_content = 6;         //随机字符串（对称密钥？）
 };
+
+enum EncMethodEnum {
+    // 对称算法
+    AES_256_GCM = 1;
+    AES_128_GCM = 2;
+    CHACHA20_IETF_POLY1305 = 3;
+    XCHACHA20_IETF_POLY1305 = 4;
+    SM4_GCM = 5;
+
+    // 非对称算法
+    SM2 = 101;
+    PQC = 102;
+}
+
+message GlobalConfig {
+    optional bytes route_hash = 1;                 //32 bytes,  or 1byte?
+    optional bool current_message_encrypted = 2;  //true：加密（非对称加密server_config），false：未加密（client_unique_id）
+    optional EncMethodEnum asymmetric_cryptograph_type = 3;//sm2, crystals_kyber
+    optional EncMethodEnum symmetric_cryptograph_type = 4; //aes-256-gcm,aes-128-gcm,chacha20-ietf-poly1305,xchacha20-ietf-poly1305,sm4-gcm
+    optional bytes server_config = 5;       //密文（非对称加密）
+    optional uint64 client_unique_id = 6;   //明文，客户端唯一标识(uint64)，每次encrypted为0时，服务端自增id(最低位的1个字节区分不同服务器)
+};
+
+message ClientUIDStatusRes {
+    optional uint64 client_unique_id = 1;   //明文，客户端唯一标识(uint64)，每次encrypted为0时，服务端自增id(最低位的1个字节区分不同服务器)
+    optional UidStatusEnum  status = 2 ;
+    optional string message = 3; // 错误信息
+}
+enum UidStatusEnum {
+    NOT_READY  = 1;
+    VALID = 2;
+    NOT_VALID = 3;
+    ERROR = 4;
+}
 
 message Route {
     optional string route = 1;    //pk1:ip1:svr_port1,pk2:ip2:svr_port2   example: 03b9...e8a1:10.101.20.31:19801

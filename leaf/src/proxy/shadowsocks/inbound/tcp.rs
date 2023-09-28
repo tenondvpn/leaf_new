@@ -22,7 +22,7 @@ impl TcpInboundHandler for Handler {
         mut sess: Session,
         stream: Self::TStream,
     ) -> std::io::Result<InboundTransport<Self::TStream, Self::TDatagram>> {
-        let mut stream = ShadowedStream::new(stream, &self.cipher, &self.password)?;
+        let mut stream = ShadowedStream::new(stream, &self.cipher, &self.password.as_bytes())?;
         let destination = SocksAddr::read_from(&mut stream, SocksAddrWireType::PortLast).await?;
         sess.destination = destination;
 

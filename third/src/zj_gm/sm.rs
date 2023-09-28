@@ -1,3 +1,6 @@
+use std::ops::Deref;
+
+use crate::zj_gm::bindings;
 use crate::zj_gm::bindings::*;
 use crate::zj_gm::bindings::{size_t, sm3_ctx_t};
 
@@ -75,9 +78,82 @@ pub fn gcm_decrypt_sm4(
     result as usize
 }
 
+pub fn generate_key_pair() {
+    let mut pub_key = [0i8; 130];
+    let mut private_key = [0i8; 64];
+    let mut pub_key_len = Box::new(private_key.len() as size_t);
+    let mut private_key_len = Box::new(pub_key.len() as size_t);
+    unsafe {
+        bindings::generate_key_pair(
+            private_key.as_mut_ptr(),
+            private_key_len.as_mut(),
+            pub_key.as_mut_ptr(),
+            pub_key_len.as_mut(),
+            asymmetric_cryptograph_t_SM2,
+        );
+    }
+    println!(
+        "generated private key: {}-> {:?}",
+        private_key_len, private_key
+    );
+    println!("generated pub_key key: {}-> {:?}", pub_key_len, pub_key);
+}
+
+pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[i8]) -> Vec<u8> {
+    let mut out_txt_box = Box::new(vec![0u8; plain_txt.len() + 220]);
+    let mut out_len = out_txt_box.len() as size_t;
+    let out_txt_len_box = Box::new(&mut out_len);
+    unsafe {
+        println!("pk.len:{}", pk.len());
+        match asymmetric_encrypt(
+            plain_txt.as_ptr(),
+            plain_txt.len() as size_t,
+            pk.as_ptr() as *const i8,
+            pk.len() as size_t,
+            out_txt_box.as_mut_ptr(),
+            *out_txt_len_box,
+            asymmetric_cryptograph_t_SM2,
+        ) {
+            0 => {}
+            i => {
+                println!("Error: symmetric encryption failed :{}", i);
+            }
+        };
+    }
+
+    let split_index_usize: usize = out_txt_len_box.to_owned() as usize;
+    out_txt_box.split_at_mut(split_index_usize).0.to_vec()
+}
+
+pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[i8]) -> Vec<u8> {
+    let mut out_txt_box = Box::new(vec![0u8; input.len() + 220]);
+
+    let mut out_len = out_txt_box.len() as size_t;
+    let out_txt_len = Box::new(&mut out_len);
+    unsafe {
+        println!("private_key.len:{}", private_key.len());
+        match asymmetric_decrypt(
+            input.as_ptr(),
+            input.len() as size_t,
+            private_key.as_ptr() as *const i8,
+            private_key.len() as size_t,
+            out_txt_box.as_mut_ptr(),
+            *out_txt_len,
+            asymmetric_cryptograph_t_SM2,
+        ) {
+            0 => {}
+            i => {
+                println!("Error: symmetric encryption failed :{}", i);
+            }
+        };
+    }
+    let split_index_usize: usize = out_txt_len.to_owned() as usize;
+    out_txt_box.split_at_mut(split_index_usize).0.to_vec()
+}
+
 pub fn test_sm4(plain_txt: &str) -> String {
-    let mut key = String::from("1234567890123456");
-    let mut iv = String::from("1234567890123456");
+    let key = String::from("1234567890123456");
+    let iv = String::from("1234567890123456");
     let mut tag = String::from("1234567890123456");
 
     // let key_len = key.len();
@@ -136,6 +212,31 @@ pub fn test_sm4(plain_txt: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_generate_key_pair() {
+        generate_key_pair();
+    }
+
+    #[test]
+    fn test_asymmetric_encrypt_SM2() {
+        let enckey: Vec<i8> = "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8"
+            .as_bytes()
+            .iter()
+            .map(|&byte| byte as i8)
+            .collect();
+        let pk:Vec<i8>= "0409F9DF311E5421A150DD7D161E4BC5C672179FAD1833FC076BB08FF356F35020CCEA490CE26775A52DC6EA718CC1AA600AED05FBF35E084A6632F6072DA9AD13"
+            .as_bytes().iter().map(|&byte| byte as i8).collect();
+
+        let plaintext = "1234567890123456789012345678901234".to_string();
+        let output = asymmetric_encrypt_SM2(plaintext.as_bytes(), pk.as_slice());
+
+        println!("output: {:?}", output);
+
+        let outPlaintext2 = asymmetric_decrypt_SM2(output.as_slice(), enckey.as_slice());
+
+        assert_eq!(plaintext, String::from_utf8(outPlaintext2).unwrap())
+    }
 
     #[test]
     fn test_sm3() {

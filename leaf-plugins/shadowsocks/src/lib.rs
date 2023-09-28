@@ -90,7 +90,7 @@ impl ExternalTcpOutboundHandler for TcpHandler {
         stream: Option<Self::Stream>,
     ) -> BorrowingFfiFuture<'a, io::Result<Self::Stream>> {
         async move {
-            let mut stream = ShadowedStream::new(stream.unwrap(), &self.cipher, &self.password)?;
+            let mut stream = ShadowedStream::new(stream.unwrap(), &self.cipher, &self.password.as_bytes())?;
             let mut buf = BytesMut::new();
             sess.destination
                 .write_buf(&mut buf, SocksAddrWireType::PortLast)?;

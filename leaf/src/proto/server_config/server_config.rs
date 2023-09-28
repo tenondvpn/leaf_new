@@ -27,11 +27,11 @@
 pub struct ServerConfig {
     // message fields
     pub pubkey: ::protobuf::SingularField<::std::vec::Vec<u8>>,
-    pub route_hash: ::protobuf::SingularField<::std::vec::Vec<u8>>,
-    pub enc_method: ::protobuf::SingularField<::std::string::String>,
+    pub enc_method: ::std::option::Option<EncMethodEnum>,
     pub client_platform_type: ::protobuf::SingularField<::std::string::String>,
     pub client_platform_version: ::protobuf::SingularField<::std::string::String>,
     pub client_platform_category: ::protobuf::SingularField<::std::string::String>,
+    pub random_content: ::protobuf::SingularField<::std::vec::Vec<u8>>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -84,53 +84,14 @@ impl ServerConfig {
         self.pubkey.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    // optional bytes route_hash = 2;
+    // optional .lego.service.protobuf.EncMethodEnum enc_method = 2;
 
 
-    pub fn get_route_hash(&self) -> &[u8] {
-        match self.route_hash.as_ref() {
-            Some(v) => &v,
-            None => &[],
-        }
-    }
-    pub fn clear_route_hash(&mut self) {
-        self.route_hash.clear();
-    }
-
-    pub fn has_route_hash(&self) -> bool {
-        self.route_hash.is_some()
-    }
-
-    // Param is passed by value, moved
-    pub fn set_route_hash(&mut self, v: ::std::vec::Vec<u8>) {
-        self.route_hash = ::protobuf::SingularField::some(v);
-    }
-
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_route_hash(&mut self) -> &mut ::std::vec::Vec<u8> {
-        if self.route_hash.is_none() {
-            self.route_hash.set_default();
-        }
-        self.route_hash.as_mut().unwrap()
-    }
-
-    // Take field
-    pub fn take_route_hash(&mut self) -> ::std::vec::Vec<u8> {
-        self.route_hash.take().unwrap_or_else(|| ::std::vec::Vec::new())
-    }
-
-    // optional string enc_method = 3;
-
-
-    pub fn get_enc_method(&self) -> &str {
-        match self.enc_method.as_ref() {
-            Some(v) => &v,
-            None => "",
-        }
+    pub fn get_enc_method(&self) -> EncMethodEnum {
+        self.enc_method.unwrap_or(EncMethodEnum::AES_256_GCM)
     }
     pub fn clear_enc_method(&mut self) {
-        self.enc_method.clear();
+        self.enc_method = ::std::option::Option::None;
     }
 
     pub fn has_enc_method(&self) -> bool {
@@ -138,25 +99,11 @@ impl ServerConfig {
     }
 
     // Param is passed by value, moved
-    pub fn set_enc_method(&mut self, v: ::std::string::String) {
-        self.enc_method = ::protobuf::SingularField::some(v);
+    pub fn set_enc_method(&mut self, v: EncMethodEnum) {
+        self.enc_method = ::std::option::Option::Some(v);
     }
 
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_enc_method(&mut self) -> &mut ::std::string::String {
-        if self.enc_method.is_none() {
-            self.enc_method.set_default();
-        }
-        self.enc_method.as_mut().unwrap()
-    }
-
-    // Take field
-    pub fn take_enc_method(&mut self) -> ::std::string::String {
-        self.enc_method.take().unwrap_or_else(|| ::std::string::String::new())
-    }
-
-    // optional string client_platform_type = 4;
+    // optional string client_platform_type = 3;
 
 
     pub fn get_client_platform_type(&self) -> &str {
@@ -192,7 +139,7 @@ impl ServerConfig {
         self.client_platform_type.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    // optional string client_platform_version = 5;
+    // optional string client_platform_version = 4;
 
 
     pub fn get_client_platform_version(&self) -> &str {
@@ -228,7 +175,7 @@ impl ServerConfig {
         self.client_platform_version.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    // optional string client_platform_category = 6;
+    // optional string client_platform_category = 5;
 
 
     pub fn get_client_platform_category(&self) -> &str {
@@ -263,6 +210,42 @@ impl ServerConfig {
     pub fn take_client_platform_category(&mut self) -> ::std::string::String {
         self.client_platform_category.take().unwrap_or_else(|| ::std::string::String::new())
     }
+
+    // optional bytes random_content = 6;
+
+
+    pub fn get_random_content(&self) -> &[u8] {
+        match self.random_content.as_ref() {
+            Some(v) => &v,
+            None => &[],
+        }
+    }
+    pub fn clear_random_content(&mut self) {
+        self.random_content.clear();
+    }
+
+    pub fn has_random_content(&self) -> bool {
+        self.random_content.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_random_content(&mut self, v: ::std::vec::Vec<u8>) {
+        self.random_content = ::protobuf::SingularField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_random_content(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if self.random_content.is_none() {
+            self.random_content.set_default();
+        }
+        self.random_content.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_random_content(&mut self) -> ::std::vec::Vec<u8> {
+        self.random_content.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    }
 }
 
 impl ::protobuf::Message for ServerConfig {
@@ -278,19 +261,19 @@ impl ::protobuf::Message for ServerConfig {
                     ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.pubkey)?;
                 },
                 2 => {
-                    ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.route_hash)?;
+                    ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.enc_method, 2, &mut self.unknown_fields)?
                 },
                 3 => {
-                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.enc_method)?;
-                },
-                4 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.client_platform_type)?;
                 },
-                5 => {
+                4 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.client_platform_version)?;
                 },
-                6 => {
+                5 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.client_platform_category)?;
+                },
+                6 => {
+                    ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.random_content)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -307,20 +290,20 @@ impl ::protobuf::Message for ServerConfig {
         if let Some(ref v) = self.pubkey.as_ref() {
             my_size += ::protobuf::rt::bytes_size(1, &v);
         }
-        if let Some(ref v) = self.route_hash.as_ref() {
-            my_size += ::protobuf::rt::bytes_size(2, &v);
-        }
-        if let Some(ref v) = self.enc_method.as_ref() {
-            my_size += ::protobuf::rt::string_size(3, &v);
+        if let Some(v) = self.enc_method {
+            my_size += ::protobuf::rt::enum_size(2, v);
         }
         if let Some(ref v) = self.client_platform_type.as_ref() {
-            my_size += ::protobuf::rt::string_size(4, &v);
+            my_size += ::protobuf::rt::string_size(3, &v);
         }
         if let Some(ref v) = self.client_platform_version.as_ref() {
-            my_size += ::protobuf::rt::string_size(5, &v);
+            my_size += ::protobuf::rt::string_size(4, &v);
         }
         if let Some(ref v) = self.client_platform_category.as_ref() {
-            my_size += ::protobuf::rt::string_size(6, &v);
+            my_size += ::protobuf::rt::string_size(5, &v);
+        }
+        if let Some(ref v) = self.random_content.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(6, &v);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -331,20 +314,20 @@ impl ::protobuf::Message for ServerConfig {
         if let Some(ref v) = self.pubkey.as_ref() {
             os.write_bytes(1, &v)?;
         }
-        if let Some(ref v) = self.route_hash.as_ref() {
-            os.write_bytes(2, &v)?;
-        }
-        if let Some(ref v) = self.enc_method.as_ref() {
-            os.write_string(3, &v)?;
+        if let Some(v) = self.enc_method {
+            os.write_enum(2, ::protobuf::ProtobufEnum::value(&v))?;
         }
         if let Some(ref v) = self.client_platform_type.as_ref() {
-            os.write_string(4, &v)?;
+            os.write_string(3, &v)?;
         }
         if let Some(ref v) = self.client_platform_version.as_ref() {
-            os.write_string(5, &v)?;
+            os.write_string(4, &v)?;
         }
         if let Some(ref v) = self.client_platform_category.as_ref() {
-            os.write_string(6, &v)?;
+            os.write_string(5, &v)?;
+        }
+        if let Some(ref v) = self.random_content.as_ref() {
+            os.write_bytes(6, &v)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -389,16 +372,547 @@ impl ::protobuf::Message for ServerConfig {
 impl ::protobuf::Clear for ServerConfig {
     fn clear(&mut self) {
         self.pubkey.clear();
-        self.route_hash.clear();
-        self.enc_method.clear();
+        self.enc_method = ::std::option::Option::None;
         self.client_platform_type.clear();
         self.client_platform_version.clear();
         self.client_platform_category.clear();
+        self.random_content.clear();
         self.unknown_fields.clear();
     }
 }
 
 impl ::protobuf::reflect::ProtobufValue for ServerConfig {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct GlobalConfig {
+    // message fields
+    pub route_hash: ::protobuf::SingularField<::std::vec::Vec<u8>>,
+    pub current_message_encrypted: ::std::option::Option<bool>,
+    pub asymmetric_cryptograph_type: ::std::option::Option<EncMethodEnum>,
+    pub symmetric_cryptograph_type: ::std::option::Option<EncMethodEnum>,
+    pub server_config: ::protobuf::SingularField<::std::vec::Vec<u8>>,
+    pub client_unique_id: ::std::option::Option<u64>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a GlobalConfig {
+    fn default() -> &'a GlobalConfig {
+        <GlobalConfig as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl GlobalConfig {
+    pub fn new() -> GlobalConfig {
+        ::std::default::Default::default()
+    }
+
+    // optional bytes route_hash = 1;
+
+
+    pub fn get_route_hash(&self) -> &[u8] {
+        match self.route_hash.as_ref() {
+            Some(v) => &v,
+            None => &[],
+        }
+    }
+    pub fn clear_route_hash(&mut self) {
+        self.route_hash.clear();
+    }
+
+    pub fn has_route_hash(&self) -> bool {
+        self.route_hash.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_route_hash(&mut self, v: ::std::vec::Vec<u8>) {
+        self.route_hash = ::protobuf::SingularField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_route_hash(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if self.route_hash.is_none() {
+            self.route_hash.set_default();
+        }
+        self.route_hash.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_route_hash(&mut self) -> ::std::vec::Vec<u8> {
+        self.route_hash.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    }
+
+    // optional bool current_message_encrypted = 2;
+
+
+    pub fn get_current_message_encrypted(&self) -> bool {
+        self.current_message_encrypted.unwrap_or(false)
+    }
+    pub fn clear_current_message_encrypted(&mut self) {
+        self.current_message_encrypted = ::std::option::Option::None;
+    }
+
+    pub fn has_current_message_encrypted(&self) -> bool {
+        self.current_message_encrypted.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_current_message_encrypted(&mut self, v: bool) {
+        self.current_message_encrypted = ::std::option::Option::Some(v);
+    }
+
+    // optional .lego.service.protobuf.EncMethodEnum asymmetric_cryptograph_type = 3;
+
+
+    pub fn get_asymmetric_cryptograph_type(&self) -> EncMethodEnum {
+        self.asymmetric_cryptograph_type.unwrap_or(EncMethodEnum::AES_256_GCM)
+    }
+    pub fn clear_asymmetric_cryptograph_type(&mut self) {
+        self.asymmetric_cryptograph_type = ::std::option::Option::None;
+    }
+
+    pub fn has_asymmetric_cryptograph_type(&self) -> bool {
+        self.asymmetric_cryptograph_type.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_asymmetric_cryptograph_type(&mut self, v: EncMethodEnum) {
+        self.asymmetric_cryptograph_type = ::std::option::Option::Some(v);
+    }
+
+    // optional .lego.service.protobuf.EncMethodEnum symmetric_cryptograph_type = 4;
+
+
+    pub fn get_symmetric_cryptograph_type(&self) -> EncMethodEnum {
+        self.symmetric_cryptograph_type.unwrap_or(EncMethodEnum::AES_256_GCM)
+    }
+    pub fn clear_symmetric_cryptograph_type(&mut self) {
+        self.symmetric_cryptograph_type = ::std::option::Option::None;
+    }
+
+    pub fn has_symmetric_cryptograph_type(&self) -> bool {
+        self.symmetric_cryptograph_type.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_symmetric_cryptograph_type(&mut self, v: EncMethodEnum) {
+        self.symmetric_cryptograph_type = ::std::option::Option::Some(v);
+    }
+
+    // optional bytes server_config = 5;
+
+
+    pub fn get_server_config(&self) -> &[u8] {
+        match self.server_config.as_ref() {
+            Some(v) => &v,
+            None => &[],
+        }
+    }
+    pub fn clear_server_config(&mut self) {
+        self.server_config.clear();
+    }
+
+    pub fn has_server_config(&self) -> bool {
+        self.server_config.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_server_config(&mut self, v: ::std::vec::Vec<u8>) {
+        self.server_config = ::protobuf::SingularField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_server_config(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if self.server_config.is_none() {
+            self.server_config.set_default();
+        }
+        self.server_config.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_server_config(&mut self) -> ::std::vec::Vec<u8> {
+        self.server_config.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    }
+
+    // optional uint64 client_unique_id = 6;
+
+
+    pub fn get_client_unique_id(&self) -> u64 {
+        self.client_unique_id.unwrap_or(0)
+    }
+    pub fn clear_client_unique_id(&mut self) {
+        self.client_unique_id = ::std::option::Option::None;
+    }
+
+    pub fn has_client_unique_id(&self) -> bool {
+        self.client_unique_id.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_client_unique_id(&mut self, v: u64) {
+        self.client_unique_id = ::std::option::Option::Some(v);
+    }
+}
+
+impl ::protobuf::Message for GlobalConfig {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.route_hash)?;
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.current_message_encrypted = ::std::option::Option::Some(tmp);
+                },
+                3 => {
+                    ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.asymmetric_cryptograph_type, 3, &mut self.unknown_fields)?
+                },
+                4 => {
+                    ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.symmetric_cryptograph_type, 4, &mut self.unknown_fields)?
+                },
+                5 => {
+                    ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.server_config)?;
+                },
+                6 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint64()?;
+                    self.client_unique_id = ::std::option::Option::Some(tmp);
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if let Some(ref v) = self.route_hash.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(1, &v);
+        }
+        if let Some(v) = self.current_message_encrypted {
+            my_size += 2;
+        }
+        if let Some(v) = self.asymmetric_cryptograph_type {
+            my_size += ::protobuf::rt::enum_size(3, v);
+        }
+        if let Some(v) = self.symmetric_cryptograph_type {
+            my_size += ::protobuf::rt::enum_size(4, v);
+        }
+        if let Some(ref v) = self.server_config.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(5, &v);
+        }
+        if let Some(v) = self.client_unique_id {
+            my_size += ::protobuf::rt::value_size(6, v, ::protobuf::wire_format::WireTypeVarint);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if let Some(ref v) = self.route_hash.as_ref() {
+            os.write_bytes(1, &v)?;
+        }
+        if let Some(v) = self.current_message_encrypted {
+            os.write_bool(2, v)?;
+        }
+        if let Some(v) = self.asymmetric_cryptograph_type {
+            os.write_enum(3, ::protobuf::ProtobufEnum::value(&v))?;
+        }
+        if let Some(v) = self.symmetric_cryptograph_type {
+            os.write_enum(4, ::protobuf::ProtobufEnum::value(&v))?;
+        }
+        if let Some(ref v) = self.server_config.as_ref() {
+            os.write_bytes(5, &v)?;
+        }
+        if let Some(v) = self.client_unique_id {
+            os.write_uint64(6, v)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> GlobalConfig {
+        GlobalConfig::new()
+    }
+
+    fn default_instance() -> &'static GlobalConfig {
+        static instance: ::protobuf::rt::LazyV2<GlobalConfig> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(GlobalConfig::new)
+    }
+}
+
+impl ::protobuf::Clear for GlobalConfig {
+    fn clear(&mut self) {
+        self.route_hash.clear();
+        self.current_message_encrypted = ::std::option::Option::None;
+        self.asymmetric_cryptograph_type = ::std::option::Option::None;
+        self.symmetric_cryptograph_type = ::std::option::Option::None;
+        self.server_config.clear();
+        self.client_unique_id = ::std::option::Option::None;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for GlobalConfig {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct ClientUIDStatusRes {
+    // message fields
+    pub client_unique_id: ::std::option::Option<u64>,
+    pub status: ::std::option::Option<UidStatusEnum>,
+    pub message: ::protobuf::SingularField<::std::string::String>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a ClientUIDStatusRes {
+    fn default() -> &'a ClientUIDStatusRes {
+        <ClientUIDStatusRes as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl ClientUIDStatusRes {
+    pub fn new() -> ClientUIDStatusRes {
+        ::std::default::Default::default()
+    }
+
+    // optional uint64 client_unique_id = 1;
+
+
+    pub fn get_client_unique_id(&self) -> u64 {
+        self.client_unique_id.unwrap_or(0)
+    }
+    pub fn clear_client_unique_id(&mut self) {
+        self.client_unique_id = ::std::option::Option::None;
+    }
+
+    pub fn has_client_unique_id(&self) -> bool {
+        self.client_unique_id.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_client_unique_id(&mut self, v: u64) {
+        self.client_unique_id = ::std::option::Option::Some(v);
+    }
+
+    // optional .lego.service.protobuf.UidStatusEnum status = 2;
+
+
+    pub fn get_status(&self) -> UidStatusEnum {
+        self.status.unwrap_or(UidStatusEnum::NOT_READY)
+    }
+    pub fn clear_status(&mut self) {
+        self.status = ::std::option::Option::None;
+    }
+
+    pub fn has_status(&self) -> bool {
+        self.status.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: UidStatusEnum) {
+        self.status = ::std::option::Option::Some(v);
+    }
+
+    // optional string message = 3;
+
+
+    pub fn get_message(&self) -> &str {
+        match self.message.as_ref() {
+            Some(v) => &v,
+            None => "",
+        }
+    }
+    pub fn clear_message(&mut self) {
+        self.message.clear();
+    }
+
+    pub fn has_message(&self) -> bool {
+        self.message.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_message(&mut self, v: ::std::string::String) {
+        self.message = ::protobuf::SingularField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_message(&mut self) -> &mut ::std::string::String {
+        if self.message.is_none() {
+            self.message.set_default();
+        }
+        self.message.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_message(&mut self) -> ::std::string::String {
+        self.message.take().unwrap_or_else(|| ::std::string::String::new())
+    }
+}
+
+impl ::protobuf::Message for ClientUIDStatusRes {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint64()?;
+                    self.client_unique_id = ::std::option::Option::Some(tmp);
+                },
+                2 => {
+                    ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 2, &mut self.unknown_fields)?
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.message)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if let Some(v) = self.client_unique_id {
+            my_size += ::protobuf::rt::value_size(1, v, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if let Some(v) = self.status {
+            my_size += ::protobuf::rt::enum_size(2, v);
+        }
+        if let Some(ref v) = self.message.as_ref() {
+            my_size += ::protobuf::rt::string_size(3, &v);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if let Some(v) = self.client_unique_id {
+            os.write_uint64(1, v)?;
+        }
+        if let Some(v) = self.status {
+            os.write_enum(2, ::protobuf::ProtobufEnum::value(&v))?;
+        }
+        if let Some(ref v) = self.message.as_ref() {
+            os.write_string(3, &v)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> ClientUIDStatusRes {
+        ClientUIDStatusRes::new()
+    }
+
+    fn default_instance() -> &'static ClientUIDStatusRes {
+        static instance: ::protobuf::rt::LazyV2<ClientUIDStatusRes> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(ClientUIDStatusRes::new)
+    }
+}
+
+impl ::protobuf::Clear for ClientUIDStatusRes {
+    fn clear(&mut self) {
+        self.client_unique_id = ::std::option::Option::None;
+        self.status = ::std::option::Option::None;
+        self.message.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ClientUIDStatusRes {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
     }
@@ -594,5 +1108,114 @@ impl ::protobuf::Clear for Route {
 impl ::protobuf::reflect::ProtobufValue for Route {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+pub enum EncMethodEnum {
+    AES_256_GCM = 1,
+    AES_128_GCM = 2,
+    CHACHA20_IETF_POLY1305 = 3,
+    XCHACHA20_IETF_POLY1305 = 4,
+    SM4_GCM = 5,
+    SM2 = 101,
+    PQC = 102,
+}
+
+impl ::protobuf::ProtobufEnum for EncMethodEnum {
+    fn value(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> ::std::option::Option<EncMethodEnum> {
+        match value {
+            1 => ::std::option::Option::Some(EncMethodEnum::AES_256_GCM),
+            2 => ::std::option::Option::Some(EncMethodEnum::AES_128_GCM),
+            3 => ::std::option::Option::Some(EncMethodEnum::CHACHA20_IETF_POLY1305),
+            4 => ::std::option::Option::Some(EncMethodEnum::XCHACHA20_IETF_POLY1305),
+            5 => ::std::option::Option::Some(EncMethodEnum::SM4_GCM),
+            101 => ::std::option::Option::Some(EncMethodEnum::SM2),
+            102 => ::std::option::Option::Some(EncMethodEnum::PQC),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    fn values() -> &'static [Self] {
+        static values: &'static [EncMethodEnum] = &[
+            EncMethodEnum::AES_256_GCM,
+            EncMethodEnum::AES_128_GCM,
+            EncMethodEnum::CHACHA20_IETF_POLY1305,
+            EncMethodEnum::XCHACHA20_IETF_POLY1305,
+            EncMethodEnum::SM4_GCM,
+            EncMethodEnum::SM2,
+            EncMethodEnum::PQC,
+        ];
+        values
+    }
+}
+
+impl ::std::marker::Copy for EncMethodEnum {
+}
+
+// Note, `Default` is implemented although default value is not 0
+impl ::std::default::Default for EncMethodEnum {
+    fn default() -> Self {
+        EncMethodEnum::AES_256_GCM
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for EncMethodEnum {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Enum(::protobuf::ProtobufEnum::descriptor(self))
+    }
+}
+
+#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+pub enum UidStatusEnum {
+    NOT_READY = 1,
+    VALID = 2,
+    NOT_VALID = 3,
+    ERROR = 4,
+}
+
+impl ::protobuf::ProtobufEnum for UidStatusEnum {
+    fn value(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> ::std::option::Option<UidStatusEnum> {
+        match value {
+            1 => ::std::option::Option::Some(UidStatusEnum::NOT_READY),
+            2 => ::std::option::Option::Some(UidStatusEnum::VALID),
+            3 => ::std::option::Option::Some(UidStatusEnum::NOT_VALID),
+            4 => ::std::option::Option::Some(UidStatusEnum::ERROR),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    fn values() -> &'static [Self] {
+        static values: &'static [UidStatusEnum] = &[
+            UidStatusEnum::NOT_READY,
+            UidStatusEnum::VALID,
+            UidStatusEnum::NOT_VALID,
+            UidStatusEnum::ERROR,
+        ];
+        values
+    }
+}
+
+impl ::std::marker::Copy for UidStatusEnum {
+}
+
+// Note, `Default` is implemented although default value is not 0
+impl ::std::default::Default for UidStatusEnum {
+    fn default() -> Self {
+        UidStatusEnum::NOT_READY
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UidStatusEnum {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Enum(::protobuf::ProtobufEnum::descriptor(self))
     }
 }

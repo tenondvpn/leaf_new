@@ -118,5 +118,21 @@ fn main() {
             })
             .run()
             .expect("protoc");
+        protoc_rust::Codegen::new()
+            .out_dir("src/proto/client_config/")
+            .inputs(&[
+                "src/proto/client_config/client_config.proto",
+                // 添加更多的 .proto 文件路径
+            ])
+            .customize(protoc_rust::Customize {
+                expose_oneof: Some(true),
+                expose_fields: Some(true),
+                generate_accessors: Some(true),
+                lite_runtime: Some(true),
+                serde_derive: Some(true),
+                ..Default::default()
+            })
+            .run()
+            .expect("protoc");
     }
 }

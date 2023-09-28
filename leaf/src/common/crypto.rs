@@ -311,7 +311,7 @@ pub mod aead {
                         error!("gcm_decrypt_sm4 decryption failed code: {}", other);
                     }
                 };
-                trace!("dec out_vec:{:?}", hex::encode(out_vec));
+                trace!("dec out_vec:{:?}", hex::encode(&out_vec));
                 (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
             } else {
                 let in_out_ref = in_out.as_ref();

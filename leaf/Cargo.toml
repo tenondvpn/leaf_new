@@ -79,8 +79,9 @@ openssl-tls = ["openssl", "tokio-openssl", "openssl-probe"]
 
 # Config formats
 config-conf = ["regex"]
-config-json = ["serde", "serde_derive", "serde_json"]
+config-json = ["serde", "serde_derive", "serde_json", "with-serde"]
 
+with-serde = ["protobuf/with-serde"]
 # Outbounds
 outbound-direct = []
 outbound-drop = []

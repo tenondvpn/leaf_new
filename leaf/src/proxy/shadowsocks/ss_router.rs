@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Mutex;
 
 use bytes::{BufMut, BytesMut};
@@ -17,6 +18,34 @@ const PROTOCOL_HASH_LEN: usize = 2;
 
 lazy_static! {
     static ref GLOBAL_ROUTES_DATA: Mutex<Route> = Mutex::new(Route::new());
+    // key = ip_port
+    static ref PROXY_NODE_MAP: Mutex<HashMap<String, (u64, Vec<u8>)>> = Mutex::new(HashMap::new());
+}
+
+pub fn sec_cache_refresh(addr: &str, port: u32, sec: (u64, Vec<u8>)) {
+    let key = format_to_key(addr, port);
+    if let Ok(mut map) = PROXY_NODE_MAP.lock() {
+        map.insert(key, sec);
+    } else {
+        error!("error: refresh proxy   key:{:?}, value:{:?}", key, sec);
+    }
+}
+
+pub fn get_sec_from_cache(addr: &str, port: u32) -> Option<(u64, Vec<u8>)> {
+    let key = format_to_key(addr, port);
+
+    if let Ok(map) = PROXY_NODE_MAP.lock() {
+        if let Some(node) = map.get(&key) {
+            return Some(node.clone());
+        }
+    } else {
+        error!("error: get_proxy_node_uid  key:{:?}", key);
+    }
+    None
+}
+
+fn format_to_key(addr: &str, port: u32) -> String {
+    format!("{}:{}", addr, port)
 }
 
 pub fn check_and_refresh_routes(buf: &mut BytesMut) -> bool {
@@ -24,39 +53,50 @@ pub fn check_and_refresh_routes(buf: &mut BytesMut) -> bool {
         Ok(Some(data)) => {
             debug!("consume_rout_data_from_buf route_pb {:?}", data);
             refresh_routes(data);
-            debug!("after refresh_routes :{:?}", {GLOBAL_ROUTES_DATA.lock().unwrap()});
+            debug!("after refresh_routes :{:?}", {
+                GLOBAL_ROUTES_DATA.lock().unwrap()
+            });
             true
         }
-        Ok(None) => { false }
+        Ok(None) => false,
         Err(err) => {
             error!("Read data failed: {}", err);
             false
-        },
+        }
     }
 }
 
-
 pub fn get_route_data() -> String {
-    GLOBAL_ROUTES_DATA.lock().unwrap()
-        .get_route().to_string().clone()
+    GLOBAL_ROUTES_DATA
+        .lock()
+        .unwrap()
+        .get_route()
+        .to_string()
+        .clone()
 }
 
 // 提取 rout 信息 并消费buffer
-fn get_rout_data_from_buf(buf:  &mut BytesMut) -> io::Result<Option<Route>> {
+fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<Route>> {
     if buf.len() < SYS_ROUT_FLAG_LEN + ROUT_DATA_LEN {
-        debug!("consume_rout_data_from_buf Not enough data len {}", buf.len());
+        debug!(
+            "consume_rout_data_from_buf Not enough data len {}",
+            buf.len()
+        );
         // Not enough data to make a decision, return as is.
         return Ok(None);
     }
     // Get the first 4 bytes from the buffer.
     let prefix = &buf[..SYS_ROUT_FLAG_LEN];
-    debug!("consume_rout_data_from_buf  Get the first 4 bytes {:?}", prefix);
+    debug!(
+        "consume_rout_data_from_buf  Get the first 4 bytes {:?}",
+        prefix
+    );
     if prefix != SYS_ROUT_FLAG {
         return Ok(None);
     }
 
     // Read the length as a u16 from the next 2 bytes.
-    let length = u16::from_be_bytes([buf[SYS_ROUT_FLAG_LEN], buf[SYS_ROUT_FLAG_LEN+1]]);
+    let length = u16::from_be_bytes([buf[SYS_ROUT_FLAG_LEN], buf[SYS_ROUT_FLAG_LEN + 1]]);
 
     if buf.len() < ROUT_HEADER_LEN + length as usize {
         // Not enough data to read the complete string, return as is.
@@ -67,14 +107,12 @@ fn get_rout_data_from_buf(buf:  &mut BytesMut) -> io::Result<Option<Route>> {
     let rout_byte_data = &buf[ROUT_HEADER_LEN..ROUT_HEADER_LEN + length as usize];
     // let rout_string_value = String::from_utf8_lossy(rout_byte_data).to_string();
 
-    let route_pb = Route::parse_from_bytes(rout_byte_data)
-        .expect("parse rout protobuf error");
+    let route_pb = Route::parse_from_bytes(rout_byte_data).expect("parse rout protobuf error");
 
     return Ok(Some(route_pb));
 }
 
 pub fn generate_routes_hash() -> BytesMut {
-
     debug!("获取锁");
     let route_hash = {
         let route = GLOBAL_ROUTES_DATA.lock().unwrap();
@@ -93,32 +131,27 @@ fn refresh_routes(routes: Route) {
     old_routes.set_route_hash(routes.get_route_hash().to_vec());
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_process_buf_valid_prefix() -> io::Result<()> {
-        println!("aa : {}","aa");
+        println!("aa : {}", "aa");
 
         Ok(())
     }
 
     #[test]
-    pub  fn test_refresh_routes() {
+    pub fn test_refresh_routes() {
         use super::*;
         let mut route = Route::new();
         route.set_route("test".to_string());
         route.set_route_hash("test".as_bytes().to_vec());
         refresh_routes(route);
-        println!("route data is : {}",  get_route_data());
+        println!("route data is : {}", get_route_data());
 
         let hash = generate_routes_hash();
         println!("hash : {:?}", &hash);
-
-
     }
 }
-
