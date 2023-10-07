@@ -51,6 +51,7 @@ impl TcpOutboundHandler for Handler {
         let mut src_stream =
             stream.ok_or_else(|| io::Error::new(io::ErrorKind::Other, "invalid input"))?;
 
+        // todo  configuration by json  ， process proto method type
         let (_tmp_ps, client_version, pk_str) = self.get_pk_passwd_from_config();
         debug!("开始");
         let (address, port) = self.get_addr_from_config();
@@ -95,6 +96,7 @@ impl Handler {
         while uid_status != UidStatusEnum::ERROR && uid_status != UidStatusEnum::VALID {
             if retries >= 4 {
                 // 重试次数已达上限
+                error!("Max retries reached");
                 panic!("Max retries reached");
             }
             if uid == 0 {
@@ -103,9 +105,11 @@ impl Handler {
 
             match uid_status {
                 UidStatusEnum::NOT_READY => {
+                    trace!("uid not ready try check_uid {}, {} times", uid, retries);
                     uid_status = Self::check_uid(uid, src_stream).await;
                 }
                 UidStatusEnum::NOT_VALID => {
+                    trace!("uid not NOT_VALID try handler {}, {:?} times", ver, &pk_str);
                     let (global_conf, n_sec) =
                         Self::build_global_conf(ver.as_str(), &pk_str, &self.cipher, "sm2")
                             .unwrap_or_else(|error| {
@@ -137,6 +141,7 @@ impl Handler {
         match uid_status {
             UidStatusEnum::VALID => {
                 sec_cache_refresh(addr, port, (uid, sec.to_vec()));
+                trace!("uid {} is VALID", uid);
                 Ok(sec)
             }
             UidStatusEnum::ERROR => {
@@ -165,8 +170,10 @@ impl Handler {
         let server_conf_bin = server_config.write_to_bytes().unwrap();
         let pk: Vec<i8> = pk_str.iter().map(|&byte| byte as i8).collect();
 
+        trace!("Before  SM2 server_config: {:?}", &server_config);
         // todo: in the future we need use method_enum to handle encrypt method
         let encrypt_content = asymmetric_encrypt_SM2(server_conf_bin.as_slice(), pk.as_slice());
+        trace!("After  SM2 server_config: {:?}", hex::encode(&encrypt_content));
 
         let route_hash = generate_routes_hash();
         let mut global_config = GlobalConfig::new();
@@ -222,7 +229,7 @@ impl Handler {
         buffer.put_u16(pb.len() as u16);
         buffer.put_slice(pb.as_slice());
         trace!(
-            "call_tcp_by_proto send buffer，len:{}, hex:{:?}",
+            "call_tcp_by_proto send buffer, len:{}, hex:{:?}",
             pb.len(),
             hex::encode(&pb)
         );
@@ -234,7 +241,7 @@ impl Handler {
         let res = match src_stream.read_exact(&mut buffer).await {
             Ok(_) => {
                 trace!(
-                    "call_tcp_by_proto rec buffer，len:{}, hex:{:?}",
+                    "call_tcp_by_proto response buffer，len:{}, hex:{:?}",
                     len,
                     hex::encode(&buffer)
                 );
