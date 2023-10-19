@@ -114,6 +114,7 @@ fn main() {
                 expose_fields: Some(true),
                 generate_accessors: Some(true),
                 lite_runtime: Some(true),
+                serde_derive: Some(true),
                 ..Default::default()
             })
             .run()

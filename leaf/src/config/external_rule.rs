@@ -4,6 +4,7 @@ use std::path::Path;
 
 use anyhow::anyhow;
 use anyhow::Result;
+use log::trace;
 
 use super::{geosite, internal};
 
@@ -89,7 +90,7 @@ pub fn add_external_rule(rule: &mut internal::Router_Rule, ext_external: &str) -
                     domain_rule.value = value;
                     rule.domains.push(domain_rule);
                 }
-                println!(
+                trace!(
                     "loaded {} domain rules from [{}] for tag [{}]",
                     rule.domains.len(),
                     file,

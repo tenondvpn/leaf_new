@@ -24,6 +24,7 @@
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_27_1;
 
 #[derive(PartialEq,Clone,Default,Debug)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct ServerConfig {
     // message fields
     pub pubkey: ::protobuf::SingularField<::std::vec::Vec<u8>>,
@@ -33,7 +34,9 @@ pub struct ServerConfig {
     pub client_platform_category: ::protobuf::SingularField<::std::string::String>,
     pub random_content: ::protobuf::SingularField<::std::vec::Vec<u8>>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -84,11 +87,11 @@ impl ServerConfig {
         self.pubkey.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    // optional .lego.service.protobuf.EncMethodEnum enc_method = 2;
+    // optional .leaf.EncMethodEnum enc_method = 2;
 
 
     pub fn get_enc_method(&self) -> EncMethodEnum {
-        self.enc_method.unwrap_or(EncMethodEnum::AES_256_GCM)
+        self.enc_method.unwrap_or(EncMethodEnum::NO_ENC)
     }
     pub fn clear_enc_method(&mut self) {
         self.enc_method = ::std::option::Option::None;
@@ -388,6 +391,7 @@ impl ::protobuf::reflect::ProtobufValue for ServerConfig {
 }
 
 #[derive(PartialEq,Clone,Default,Debug)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct GlobalConfig {
     // message fields
     pub route_hash: ::protobuf::SingularField<::std::vec::Vec<u8>>,
@@ -397,7 +401,9 @@ pub struct GlobalConfig {
     pub server_config: ::protobuf::SingularField<::std::vec::Vec<u8>>,
     pub client_unique_id: ::std::option::Option<u64>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -467,11 +473,11 @@ impl GlobalConfig {
         self.current_message_encrypted = ::std::option::Option::Some(v);
     }
 
-    // optional .lego.service.protobuf.EncMethodEnum asymmetric_cryptograph_type = 3;
+    // optional .leaf.EncMethodEnum asymmetric_cryptograph_type = 3;
 
 
     pub fn get_asymmetric_cryptograph_type(&self) -> EncMethodEnum {
-        self.asymmetric_cryptograph_type.unwrap_or(EncMethodEnum::AES_256_GCM)
+        self.asymmetric_cryptograph_type.unwrap_or(EncMethodEnum::NO_ENC)
     }
     pub fn clear_asymmetric_cryptograph_type(&mut self) {
         self.asymmetric_cryptograph_type = ::std::option::Option::None;
@@ -486,11 +492,11 @@ impl GlobalConfig {
         self.asymmetric_cryptograph_type = ::std::option::Option::Some(v);
     }
 
-    // optional .lego.service.protobuf.EncMethodEnum symmetric_cryptograph_type = 4;
+    // optional .leaf.EncMethodEnum symmetric_cryptograph_type = 4;
 
 
     pub fn get_symmetric_cryptograph_type(&self) -> EncMethodEnum {
-        self.symmetric_cryptograph_type.unwrap_or(EncMethodEnum::AES_256_GCM)
+        self.symmetric_cryptograph_type.unwrap_or(EncMethodEnum::NO_ENC)
     }
     pub fn clear_symmetric_cryptograph_type(&mut self) {
         self.symmetric_cryptograph_type = ::std::option::Option::None;
@@ -709,13 +715,16 @@ impl ::protobuf::reflect::ProtobufValue for GlobalConfig {
 }
 
 #[derive(PartialEq,Clone,Default,Debug)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct ClientUIDStatusRes {
     // message fields
     pub client_unique_id: ::std::option::Option<u64>,
     pub status: ::std::option::Option<UidStatusEnum>,
     pub message: ::protobuf::SingularField<::std::string::String>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -749,7 +758,7 @@ impl ClientUIDStatusRes {
         self.client_unique_id = ::std::option::Option::Some(v);
     }
 
-    // optional .lego.service.protobuf.UidStatusEnum status = 2;
+    // optional .leaf.UidStatusEnum status = 2;
 
 
     pub fn get_status(&self) -> UidStatusEnum {
@@ -919,12 +928,15 @@ impl ::protobuf::reflect::ProtobufValue for ClientUIDStatusRes {
 }
 
 #[derive(PartialEq,Clone,Default,Debug)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct Route {
     // message fields
     pub route: ::protobuf::SingularField<::std::string::String>,
     pub route_hash: ::protobuf::SingularField<::std::vec::Vec<u8>>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -1112,7 +1124,9 @@ impl ::protobuf::reflect::ProtobufValue for Route {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub enum EncMethodEnum {
+    NO_ENC = 0,
     AES_256_GCM = 1,
     AES_128_GCM = 2,
     CHACHA20_IETF_POLY1305 = 3,
@@ -1129,6 +1143,7 @@ impl ::protobuf::ProtobufEnum for EncMethodEnum {
 
     fn from_i32(value: i32) -> ::std::option::Option<EncMethodEnum> {
         match value {
+            0 => ::std::option::Option::Some(EncMethodEnum::NO_ENC),
             1 => ::std::option::Option::Some(EncMethodEnum::AES_256_GCM),
             2 => ::std::option::Option::Some(EncMethodEnum::AES_128_GCM),
             3 => ::std::option::Option::Some(EncMethodEnum::CHACHA20_IETF_POLY1305),
@@ -1142,6 +1157,7 @@ impl ::protobuf::ProtobufEnum for EncMethodEnum {
 
     fn values() -> &'static [Self] {
         static values: &'static [EncMethodEnum] = &[
+            EncMethodEnum::NO_ENC,
             EncMethodEnum::AES_256_GCM,
             EncMethodEnum::AES_128_GCM,
             EncMethodEnum::CHACHA20_IETF_POLY1305,
@@ -1157,10 +1173,9 @@ impl ::protobuf::ProtobufEnum for EncMethodEnum {
 impl ::std::marker::Copy for EncMethodEnum {
 }
 
-// Note, `Default` is implemented although default value is not 0
 impl ::std::default::Default for EncMethodEnum {
     fn default() -> Self {
-        EncMethodEnum::AES_256_GCM
+        EncMethodEnum::NO_ENC
     }
 }
 
@@ -1171,6 +1186,7 @@ impl ::protobuf::reflect::ProtobufValue for EncMethodEnum {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub enum UidStatusEnum {
     NOT_READY = 1,
     VALID = 2,

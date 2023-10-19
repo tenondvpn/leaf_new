@@ -1,3 +1,4 @@
+
 // Every time you make changes to this file, run `make proto-gen` to re-generate protobuf files.
 
 syntax = "proto3";

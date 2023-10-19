@@ -1,5 +1,5 @@
 syntax = "proto2";
-
+package leaf;
 message ServerConfig {
     optional bytes pubkey = 1;
     optional EncMethodEnum enc_method = 2;           //aes-256-gcm,aes-128-gcm,chacha20-ietf-poly1305,xchacha20-ietf-poly1305,sm4-gcm
@@ -10,6 +10,8 @@ message ServerConfig {
 };
 
 enum EncMethodEnum {
+
+    NO_ENC = 0;
     // 对称算法
     AES_256_GCM = 1;
     AES_128_GCM = 2;

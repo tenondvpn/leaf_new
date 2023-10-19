@@ -1,8 +1,10 @@
 mod client_config;
+use super::server_config;
 pub use client_config::*;
 
 #[cfg(test)]
 mod client_config_test {
+    use crate::proto::client_config::ProxyNode;
     use super::*;
 
     #[test]

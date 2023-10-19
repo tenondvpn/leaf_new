@@ -15,6 +15,11 @@ lazy_static! {
     static ref connection_map: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
+pub fn exchange_enc_password(json: String) {
+
+}
+
+
 pub fn StartThread(id: String) {
     let mut v = started.lock().unwrap();
     if (*v > 0) {

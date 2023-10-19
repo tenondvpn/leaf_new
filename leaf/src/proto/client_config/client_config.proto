@@ -1,8 +1,12 @@
 syntax = "proto2";
-import "server_config.proto";
+package leaf;
+
+import "src/proto/server_config/server_config.proto";
 
 message ClientNode {
   repeated ProxyNode node_list = 1;
+  optional string user_login_information  = 2;// 用户登录信息，可以是json，交换密钥时透传
+
 }
 
 message ProxyNode {
@@ -20,10 +24,28 @@ message ProxyNode {
 
 message CryptoMethodInfo {
   required EncMethodEnum enc_method_type = 1; // 加密算法类型
-  optional bytes server_pubkey = 2;
-  optional bytes pk = 3;
-  optional bytes sec_key = 4;
-  optional uint64 client_unique_id = 5; // 客户端唯一标识(uint64)
+  optional string server_pubkey = 2; // 代理服务器公钥
+  optional bytes client_pk = 3; // app 忽略，客户端生成公钥
+  optional bytes client_sec_key = 4; // app 忽略，客户端生成私钥
+  optional bytes sec_key = 5; //app忽略， 对称加密密钥
+  optional uint64 client_unique_id = 6; //app忽略， 客户端唯一标识(uint64)
+}
+
+message RustMessage {
+  optional uint64 timestamp = 1;
+  optional RustMessage message_type =2;
+  optional bytes protobuf_bytes = 3;
+}
+message ErrorRustMessage {
+  optional ErrorType error_type =1;
+  optional string msg=2; // msg 一般用来打印堆栈。
+}
+enum ErrorType {
+  change_password_timeout = 1; // 与服务端交换密钥超时
+}
+
+enum RustMessageType {
+  R_ERROR = 1;
 }
 
 
