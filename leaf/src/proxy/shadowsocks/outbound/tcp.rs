@@ -55,15 +55,16 @@ impl TcpOutboundHandler for Handler {
         let (_tmp_ps, client_version, pk_str) = self.get_pk_passwd_from_config();
         debug!("开始");
         let (address, port) = self.get_addr_from_config();
-        let passwd = self
-            .exchange_password(
-                &mut src_stream,
-                client_version,
-                pk_str,
-                &address,
-                port as u32,
-            )
-            .await?;
+        let passwd = vec![];
+        // let passwd = self
+        //     .exchange_password(
+        //         &mut src_stream,
+        //         client_version,
+        //         pk_str,
+        //         &address,
+        //         port as u32,
+        //     )
+        //     .await?;
         trace!("结束");
 
         let mut stream = ShadowedStream::new(src_stream, &self.cipher, passwd.as_slice())?;
@@ -77,148 +78,148 @@ impl TcpOutboundHandler for Handler {
 }
 
 impl Handler {
-    async fn exchange_password(
-        &self,
-        src_stream: &mut AnyStream,
-        ver: String,
-        pk_str: Vec<u8>,
-        addr: &String,
-        port: u32,
-    ) -> io::Result<Vec<u8>> {
-        let (mut uid, mut sec) = match get_sec_from_cache(addr, port) {
-            None => (0, Vec::new()),
-            Some(a) => a,
-        };
+    // async fn exchange_password(
+    //     &self,
+    //     src_stream: &mut AnyStream,
+    //     ver: String,
+    //     pk_str: Vec<u8>,
+    //     addr: &String,
+    //     port: u32,
+    // ) -> io::Result<Vec<u8>> {
+    //     let (mut uid, mut sec) = match get_sec_from_cache(addr, port) {
+    //         None => (0, Vec::new()),
+    //         Some(a) => a,
+    //     };
+    //
+    //     let mut uid_status = UidStatusEnum::NOT_VALID;
+    //     let mut retries = 0;
+    //
+    //     while uid_status != UidStatusEnum::ERROR && uid_status != UidStatusEnum::VALID {
+    //         if retries >= 4 {
+    //             // 重试次数已达上限
+    //             error!("Max retries reached");
+    //             panic!("Max retries reached");
+    //         }
+    //         if uid == 0 {
+    //             uid_status = UidStatusEnum::NOT_VALID;
+    //         }
+    //
+    //         match uid_status {
+    //             UidStatusEnum::NOT_READY => {
+    //                 trace!("uid not ready try check_uid {}, {} times", uid, retries);
+    //                 uid_status = Self::check_uid(uid, src_stream).await;
+    //             }
+    //             UidStatusEnum::NOT_VALID => {
+    //                 trace!("uid not NOT_VALID try handler {}, {:?} times", ver, &pk_str);
+    //                 let (global_conf, n_sec) =
+    //                     Self::build_global_conf(ver.as_str(), &pk_str, &self.cipher, "sm2")
+    //                         .unwrap_or_else(|error| {
+    //                             // 处理错误
+    //                             error!("Error: {:?}", error);
+    //                             (GlobalConfig::new(), Vec::new())
+    //                         });
+    //                 uid = Self::call_tcp_by_proto::<ClientUIDStatusRes>(&global_conf, src_stream)
+    //                     .await?
+    //                     .get_client_unique_id();
+    //                 sec = n_sec;
+    //             }
+    //             _ => {}
+    //         }
+    //         // 等待指定的时间间隔
+    //         let delay = match retries {
+    //             0 => Duration::from_millis(200),
+    //             1 => Duration::from_millis(400),
+    //             2 => Duration::from_secs(1),
+    //             3 => Duration::from_secs(2),
+    //             4 => Duration::from_secs(5),
+    //             _ => unreachable!(),
+    //         };
+    //         retries += 1;
+    //         sleep(delay).await;
+    //     }
+    //
+    //     // 处理最终的 uid_status
+    //     match uid_status {
+    //         UidStatusEnum::VALID => {
+    //             sec_cache_refresh(addr, port, (uid, sec.to_vec()));
+    //             trace!("uid {} is VALID", uid);
+    //             Ok(sec)
+    //         }
+    //         UidStatusEnum::ERROR => {
+    //             panic!("Uid check returned an error");
+    //         }
+    //         _ => {
+    //             panic!("Uid is not valid");
+    //         }
+    //     }
+    // }
 
-        let mut uid_status = UidStatusEnum::NOT_VALID;
-        let mut retries = 0;
+    // fn build_global_conf(
+    //     ver: &str,
+    //     pk_str: &Vec<u8>,
+    //     cipher_name: &str,
+    //     handler_cipher_name: &str,
+    // ) -> Result<(GlobalConfig, Vec<u8>), Box<dyn Error>> {
+    //     let method_enum =
+    //         EncMethodEnum::get_enum_from_string(cipher_name).expect("Cipher name not found");
+    //     let handler_cipher = EncMethodEnum::get_enum_from_string(handler_cipher_name)
+    //         .expect("Cipher name not found");
+    //
+    //     let server_config = Self::build_server_conf(ver, pk_str, method_enum);
+    //     let sec = server_config.get_random_content().clone().to_vec();
+    //
+    //     let server_conf_bin = server_config.write_to_bytes().unwrap();
+    //     let pk: Vec<i8> = pk_str.iter().map(|&byte| byte as i8).collect();
+    //
+    //     trace!("Before  SM2 server_config: {:?}", &server_config);
+    //     // todo: in the future we need use method_enum to handle encrypt method
+    //     let encrypt_content = asymmetric_encrypt_SM2(server_conf_bin.as_slice(), pk.as_slice());
+    //     trace!("After  SM2 server_config: {:?}", hex::encode(&encrypt_content));
+    //
+    //     let route_hash = generate_routes_hash();
+    //     let mut global_config = GlobalConfig::new();
+    //     global_config.set_route_hash(route_hash.to_vec());
+    //     global_config.set_current_message_encrypted(true);
+    //     global_config.set_asymmetric_cryptograph_type(handler_cipher);
+    //     global_config.set_symmetric_cryptograph_type(method_enum);
+    //     global_config.set_server_config(encrypt_content);
+    //
+    //     Ok((global_config, sec))
+    // }
 
-        while uid_status != UidStatusEnum::ERROR && uid_status != UidStatusEnum::VALID {
-            if retries >= 4 {
-                // 重试次数已达上限
-                error!("Max retries reached");
-                panic!("Max retries reached");
-            }
-            if uid == 0 {
-                uid_status = UidStatusEnum::NOT_VALID;
-            }
-
-            match uid_status {
-                UidStatusEnum::NOT_READY => {
-                    trace!("uid not ready try check_uid {}, {} times", uid, retries);
-                    uid_status = Self::check_uid(uid, src_stream).await;
-                }
-                UidStatusEnum::NOT_VALID => {
-                    trace!("uid not NOT_VALID try handler {}, {:?} times", ver, &pk_str);
-                    let (global_conf, n_sec) =
-                        Self::build_global_conf(ver.as_str(), &pk_str, &self.cipher, "sm2")
-                            .unwrap_or_else(|error| {
-                                // 处理错误
-                                error!("Error: {:?}", error);
-                                (GlobalConfig::new(), Vec::new())
-                            });
-                    uid = Self::call_tcp_by_proto::<ClientUIDStatusRes>(&global_conf, src_stream)
-                        .await?
-                        .get_client_unique_id();
-                    sec = n_sec;
-                }
-                _ => {}
-            }
-            // 等待指定的时间间隔
-            let delay = match retries {
-                0 => Duration::from_millis(200),
-                1 => Duration::from_millis(400),
-                2 => Duration::from_secs(1),
-                3 => Duration::from_secs(2),
-                4 => Duration::from_secs(5),
-                _ => unreachable!(),
-            };
-            retries += 1;
-            sleep(delay).await;
-        }
-
-        // 处理最终的 uid_status
-        match uid_status {
-            UidStatusEnum::VALID => {
-                sec_cache_refresh(addr, port, (uid, sec.to_vec()));
-                trace!("uid {} is VALID", uid);
-                Ok(sec)
-            }
-            UidStatusEnum::ERROR => {
-                panic!("Uid check returned an error");
-            }
-            _ => {
-                panic!("Uid is not valid");
-            }
-        }
-    }
-
-    fn build_global_conf(
-        ver: &str,
-        pk_str: &Vec<u8>,
-        cipher_name: &str,
-        handler_cipher_name: &str,
-    ) -> Result<(GlobalConfig, Vec<u8>), Box<dyn Error>> {
-        let method_enum =
-            EncMethodEnum::get_enum_from_string(cipher_name).expect("Cipher name not found");
-        let handler_cipher = EncMethodEnum::get_enum_from_string(handler_cipher_name)
-            .expect("Cipher name not found");
-
-        let server_config = Self::build_server_conf(ver, pk_str, method_enum);
-        let sec = server_config.get_random_content().clone().to_vec();
-
-        let server_conf_bin = server_config.write_to_bytes().unwrap();
-        let pk: Vec<i8> = pk_str.iter().map(|&byte| byte as i8).collect();
-
-        trace!("Before  SM2 server_config: {:?}", &server_config);
-        // todo: in the future we need use method_enum to handle encrypt method
-        let encrypt_content = asymmetric_encrypt_SM2(server_conf_bin.as_slice(), pk.as_slice());
-        trace!("After  SM2 server_config: {:?}", hex::encode(&encrypt_content));
-
-        let route_hash = generate_routes_hash();
-        let mut global_config = GlobalConfig::new();
-        global_config.set_route_hash(route_hash.to_vec());
-        global_config.set_current_message_encrypted(true);
-        global_config.set_asymmetric_cryptograph_type(handler_cipher);
-        global_config.set_symmetric_cryptograph_type(method_enum);
-        global_config.set_server_config(encrypt_content);
-
-        Ok((global_config, sec))
-    }
-
-    /**
-     * while generating random_content in this method
-     */
-    fn build_server_conf(ver: &str, pk_str: &Vec<u8>, method_enum: EncMethodEnum) -> ServerConfig {
-        let ver_str = String::from(ver.clone());
-        let version_data: Vec<&str> = ver_str.split("_").collect();
-        let mut rng = StdRng::from_entropy();
-        let mut random_content = vec![0u8; 32]; // 32 B
-        rng.fill_bytes(&mut random_content);
-
-        let mut server_conf_prof = ServerConfig::new();
-        server_conf_prof.set_pubkey(pk_str.to_owned());
-        server_conf_prof.set_enc_method(method_enum.clone());
-
-        if version_data.len() == 3 {
-            server_conf_prof.set_client_platform_type(version_data[0].to_owned());
-            server_conf_prof.set_client_platform_version(version_data[1].to_owned());
-            server_conf_prof.set_client_platform_category(version_data[2].to_owned());
-        } else {
-            error!("set_client_platform_version error: {}", ver_str);
-        }
-        server_conf_prof.set_random_content(random_content.to_owned());
-        server_conf_prof
-    }
-
-    async fn check_uid(uid: u64, src_stream: &mut AnyStream) -> UidStatusEnum {
-        let mut global_config = GlobalConfig::default();
-        global_config.set_client_unique_id(uid);
-        let proto = Self::call_tcp_by_proto::<ClientUIDStatusRes>(&global_config, src_stream)
-            .await
-            .unwrap();
-        proto.get_status()
-    }
+    // /**
+    //  * while generating random_content in this method
+    //  */
+    // fn build_server_conf(ver: &str, pk_str: &Vec<u8>, method_enum: EncMethodEnum) -> ServerConfig {
+    //     let ver_str = String::from(ver.clone());
+    //     let version_data: Vec<&str> = ver_str.split("_").collect();
+    //     let mut rng = StdRng::from_entropy();
+    //     let mut random_content = vec![0u8; 32]; // 32 B
+    //     rng.fill_bytes(&mut random_content);
+    //
+    //     let mut server_conf_prof = ServerConfig::new();
+    //     server_conf_prof.set_pubkey(pk_str.to_owned());
+    //     server_conf_prof.set_enc_method(method_enum.clone());
+    //
+    //     if version_data.len() == 3 {
+    //         server_conf_prof.set_client_platform_type(version_data[0].to_owned());
+    //         server_conf_prof.set_client_platform_version(version_data[1].to_owned());
+    //         server_conf_prof.set_client_platform_category(version_data[2].to_owned());
+    //     } else {
+    //         error!("set_client_platform_version error: {}", ver_str);
+    //     }
+    //     server_conf_prof.set_random_content(random_content.to_owned());
+    //     server_conf_prof
+    // }
+    //
+    // async fn check_uid(uid: u64, src_stream: &mut AnyStream) -> UidStatusEnum {
+    //     let mut global_config = GlobalConfig::default();
+    //     global_config.set_client_unique_id(uid);
+    //     let proto = Self::call_tcp_by_proto::<ClientUIDStatusRes>(&global_config, src_stream)
+    //         .await
+    //         .unwrap();
+    //     proto.get_status()
+    // }
 
     async fn call_tcp_by_proto<RESP: Message>(
         proto: &dyn Message,

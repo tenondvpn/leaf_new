@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc::sync_channel;
@@ -61,6 +63,10 @@ pub enum Error {
     SyncChannelRecv(#[from] std::sync::mpsc::RecvError),
     #[error("runtime manager error")]
     RuntimeManager,
+
+    #[error("exchange password error")]
+    ExchangePassword(String),
+
 }
 
 pub type Runner = futures::future::BoxFuture<'static, ()>;
@@ -414,6 +420,9 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
     let outbound_manager = Arc::new(RwLock::new(
         OutboundManager::new(&config.outbounds, dns_client.clone()).map_err(Error::Config)?,
     ));
+    // 等待交换密钥完成
+    rt.block_on(common::sync_valid_routes::wait_for_password_notification());
+
     let router = Arc::new(RwLock::new(Router::new(
         &mut config.router,
         dns_client.clone(),

@@ -102,7 +102,7 @@ fn main() {
             .run()
             .expect("protoc");
     }
-    if env::var("PROTO_GEN_ZJ").is_ok() {
+    if env::var("P_ZJ").is_ok() {
         protoc_rust::Codegen::new()
             .out_dir("src/proto/server_config/")
             .inputs(&[

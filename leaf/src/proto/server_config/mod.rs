@@ -3,22 +3,22 @@ mod server_config;
 pub use server_config::*;
 
 impl ServerConfig {
-    pub fn build(
-        client_platform_type: String,
-        client_platform_version: String,
-        client_platform_category: String,
-        pk: Vec<u8>,
-        random_content: Vec<u8>,
-    ) -> ServerConfig {
-        let mut server_config = ServerConfig::new();
-        server_config.set_pubkey(pk);
-        server_config.set_enc_method(EncMethodEnum::SM4_GCM);
-        server_config.set_client_platform_type(client_platform_type);
-        server_config.set_client_platform_version(client_platform_version);
-        server_config.set_client_platform_category(client_platform_category);
-        server_config.set_random_content(random_content);
-        server_config
-    }
+    // pub fn build(
+    //     client_platform_type: String,
+    //     client_platform_version: String,
+    //     client_platform_category: String,
+    //     pk: Vec<u8>,
+    //     random_content: Vec<u8>,
+    // ) -> ServerConfig {
+    //     let mut server_config = ServerConfig::new();
+    //     server_config.set_pubkey(pk);
+    //     server_config.set_enc_method(EncMethodEnum::SM4_GCM);
+    //     server_config.set_client_platform_type(client_platform_type);
+    //     server_config.set_client_platform_version(client_platform_version);
+    //     server_config.set_client_platform_category(client_platform_category);
+    //     server_config.set_random_content(random_content);
+    //     server_config
+    // }
 }
 
 impl EncMethodEnum {

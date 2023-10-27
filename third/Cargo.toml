@@ -5,7 +5,9 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+[dev-dependencies]
+hex = {version = "0.3"}
+
 #libdlt-sys = "0.1.1"
 [build-dependencies]
 bindgen = "0.59"

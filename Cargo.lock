@@ -2541,6 +2541,7 @@ name = "third"
 version = "0.1.0"
 dependencies = [
  "bindgen 0.59.2",
+ "hex",
 ]
 
 [[package]]

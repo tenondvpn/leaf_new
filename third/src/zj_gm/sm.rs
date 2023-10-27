@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::ops::Deref;
 
 use crate::zj_gm::bindings;
@@ -78,28 +79,33 @@ pub fn gcm_decrypt_sm4(
     result as usize
 }
 
-pub fn generate_key_pair() {
+pub fn generate_key_pair() -> Result<(Vec<u8>, Vec<u8>), String> {
     let mut pub_key = [0i8; 130];
     let mut private_key = [0i8; 64];
     let mut pub_key_len = Box::new(private_key.len() as size_t);
     let mut private_key_len = Box::new(pub_key.len() as size_t);
     unsafe {
-        bindings::generate_key_pair(
+        match bindings::generate_key_pair(
             private_key.as_mut_ptr(),
             private_key_len.as_mut(),
             pub_key.as_mut_ptr(),
             pub_key_len.as_mut(),
             asymmetric_cryptograph_t_SM2,
-        );
+        ) {
+            0 => {
+                Ok((private_key.map(|x|  {x as u8}).to_vec(),
+                    pub_key.map(|x| {x as u8}).to_vec()))
+            }
+            i => {
+                let msg = format!("Error: generate_key_pair failed :{}", i);
+                println!("Error: symmetric encryption failed :{}", i);
+                Err(msg)
+            }
+        }
     }
-    println!(
-        "generated private key: {}-> {:?}",
-        private_key_len, private_key
-    );
-    println!("generated pub_key key: {}-> {:?}", pub_key_len, pub_key);
 }
 
-pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[i8]) -> Vec<u8> {
+pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, String> {
     let mut out_txt_box = Box::new(vec![0u8; plain_txt.len() + 220]);
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len_box = Box::new(&mut out_len);
@@ -114,18 +120,22 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[i8]) -> Vec<u8> {
             *out_txt_len_box,
             asymmetric_cryptograph_t_SM2,
         ) {
-            0 => {}
-            i => {
-                println!("Error: symmetric encryption failed :{}", i);
+            0 => {
+                let split_index_usize: usize = out_txt_len_box.to_owned() as usize;
+                Ok(out_txt_box.split_at_mut(split_index_usize).0.to_vec())
             }
-        };
+            i => {
+                let msg = format!("Error: symmetric encryption failed :{}", i);
+                println!("Error: symmetric encryption failed :{}", i);
+                Err(msg)
+            }
+        }
     }
-
-    let split_index_usize: usize = out_txt_len_box.to_owned() as usize;
-    out_txt_box.split_at_mut(split_index_usize).0.to_vec()
 }
 
-pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[i8]) -> Vec<u8> {
+
+
+pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[u8]) -> Result<Vec<u8>, String> {
     let mut out_txt_box = Box::new(vec![0u8; input.len() + 220]);
 
     let mut out_len = out_txt_box.len() as size_t;
@@ -141,14 +151,65 @@ pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[i8]) -> Vec<u8> {
             *out_txt_len,
             asymmetric_cryptograph_t_SM2,
         ) {
+            0 => {
+                let split_index_usize: usize = out_txt_len.to_owned() as usize;
+                Ok(out_txt_box.split_at_mut(split_index_usize).0.to_vec())
+            },
+            i => {
+                let msg = format!("Error: symmetric decrypt failed :{}", i);
+                println!("Error: symmetric decrypt failed :{}", i);
+                Err(msg)
+            }
+        }
+    }
+}
+pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
+    let mut out_txt_box = Box::new(vec![0u8; plain_txt.len() + 220]);
+    let mut out_len = out_txt_box.len() as size_t;
+    let out_txt_len_box = Box::new(&mut out_len);
+    unsafe {
+        println!("sec_key.len:{}", sec_key.len());
+        match sign(
+            plain_txt.as_ptr(),
+            plain_txt.len() as size_t,
+            pk.as_ptr() as *const i8,
+            0,
+            pk.as_ptr() as *const i8,
+            pk.len() as size_t,
+            sec_key.as_ptr() as *const i8,
+            sec_key.len() as size_t,
+            out_txt_box.as_mut_ptr(),
+            *out_txt_len_box,
+            asymmetric_cryptograph_t_SM2,
+        ) {
             0 => {}
             i => {
-                println!("Error: symmetric encryption failed :{}", i);
+                println!("Error: symmetric sig_SM2 failed :{}", i);
             }
         };
     }
-    let split_index_usize: usize = out_txt_len.to_owned() as usize;
+
+    let split_index_usize: usize = out_txt_len_box.to_owned() as usize;
     out_txt_box.split_at_mut(split_index_usize).0.to_vec()
+}
+
+
+pub fn verify_SM2(plain_txt: &[u8], signature:&[u8], pk: &[u8]) -> i32 {
+    unsafe {
+        println!("pk.len:{}", pk.len());
+        verify(
+            plain_txt.as_ptr(),
+            plain_txt.len() as size_t,
+            Box::new(vec![0i8;1]).as_ptr(),
+            0,
+            signature.as_ptr(),
+            signature.len() as size_t,
+            Box::new(pk.to_vec()).as_ptr() as *const i8,
+            pk.len() as size_t,
+            asymmetric_cryptograph_t_SM2,
+        )
+    }
+
 }
 
 pub fn test_sm4(plain_txt: &str) -> String {
@@ -211,31 +272,92 @@ pub fn test_sm4(plain_txt: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use hex::encode;
     use super::*;
 
     #[test]
     fn test_generate_key_pair() {
-        generate_key_pair();
+        let (enc,pk) = generate_key_pair().unwrap();
+
+    }
+
+    #[test]
+    fn test_sm2_signed() {
+        let (enckey, pk) = use_const_pk();
+        let signature = sig_SM2(plain_from_server().as_bytes(), enckey.as_slice(), pk.as_slice());
+        println!("signature: {}", hex::encode(&signature));
+        let result = verify_SM2(plain_from_server().as_bytes(), signature.as_slice(), pk.as_slice());
+        assert_eq!(result, 0)
     }
 
     #[test]
     fn test_asymmetric_encrypt_SM2() {
-        let enckey: Vec<i8> = "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8"
-            .as_bytes()
-            .iter()
-            .map(|&byte| byte as i8)
-            .collect();
-        let pk:Vec<i8>= "0409F9DF311E5421A150DD7D161E4BC5C672179FAD1833FC076BB08FF356F35020CCEA490CE26775A52DC6EA718CC1AA600AED05FBF35E084A6632F6072DA9AD13"
-            .as_bytes().iter().map(|&byte| byte as i8).collect();
+        let (enckey, pk) = use_const_pk();
+        println!("pk_hex :{}", hex::encode(&pk));
+        println!("pk: {:?}", &pk);
 
         let plaintext = "1234567890123456789012345678901234".to_string();
-        let output = asymmetric_encrypt_SM2(plaintext.as_bytes(), pk.as_slice());
+        let output = asymmetric_encrypt_SM2(plaintext.as_bytes(), pk.as_slice()).unwrap();
 
         println!("output: {:?}", output);
 
-        let outPlaintext2 = asymmetric_decrypt_SM2(output.as_slice(), enckey.as_slice());
+        let outPlaintext2 = asymmetric_decrypt_SM2(output.as_slice(), enckey.as_slice()).unwrap();
 
         assert_eq!(plaintext, String::from_utf8(outPlaintext2).unwrap())
+    }
+
+
+
+    #[test]
+    fn tetst_verify_sm2() {
+
+        let plain = "0880a098dc849ad81b121811ff00fe000400ff00ff000c00d0000000800070ff300000";
+        let server_pk = "30343039463944463331314535343231413135304444374431363145344243354336373231373946414431383333464330373642423038464633353646333530323043434541343930434532363737354135324443364541373138434331414136303041454430354642463335453038344136363332463630373244413941443133".as_bytes();
+        let signature = "304502207620b4cdb49b4fe5b2e149717ca3a0e1095a2a99a7de7072d134e98953dbf9f6022100b6c2c124eb391ca874e4d478fcd433f1742d44109c6685797a6ed21a73009d28";
+
+        let plain = hex::decode(&plain).unwrap();
+        let signature = hex::decode(&signature).unwrap();
+        let server_pk = hex::decode(&server_pk).unwrap();
+        let result = verify_SM2(plain.as_slice(), signature.as_slice(), server_pk.as_slice());
+        assert_eq!(result, 0)
+    }
+
+    fn plain_from_server() -> String {
+        let hex = "0880a098dc849ad81b121811ff00fe000400ff00ff000c00d0000000800070ff300000".to_string();
+        let hex = hex.replace("\\n", "");
+        hex
+    }
+    fn encode_from_server() -> Vec<u8> {
+        let hex = "30818c022052caaed3b7cdf22eb9690e9969e32c50bd7301357199877
+8cb5aa95ab29cf3ff022100c44f66756ab3f62f7a449cc699f685deb04a0470dc094d2a0e6c55771e31ea900420e0626535e0e8d0cdaf27a278b42a1ec9a514c6b7aa715275b41ce61b9ea78eec04237942283e20a6af056ce682360691b3bf626e661ae19ab9a7ca4330ccee5
+2c2ebe7cab7".to_string();
+        let hex = hex.replace("\n", "");
+        hex::decode(&hex).unwrap()
+    }
+
+    fn signature_from_server() -> Vec<u8> {
+        let hex = "3045022100d731b16c952fa97ba314914c15fb8901daf2c59e26952d59f65c5930f79ad6e302205b4df1d7507ab437bcfdc74a6c9c868ea2d96a490ec33449aaa056436251e0bd".to_string();
+        hex::decode(&hex).unwrap()
+    }
+    fn encode_form_client() -> String {
+        "".to_string()
+    }
+
+    fn use_test_client_key() -> (Vec<u8>, Vec<u8>) {
+        let enckey = hex::decode("62656563356638313064303433333839653330663664653137363365636632313132383037613230663939333335383230656233626431306137633563333531".as_bytes()).unwrap().to_owned();
+        let pk = hex::decode("30343832346433626436316233623165616230353038353661336439353332393932326562653162383036323834316463303534336163336532396533366333356338376661653030343232386661643061663063663261643037396237303432366466636566323264363734366364333862303431666331653431333137303830".as_bytes()).unwrap().to_owned();
+        (enckey, pk)
+    }
+
+    fn use_const_pk() -> (Vec<u8>, Vec<u8>) {
+        // let enckey = "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8"
+        //     .as_bytes().to_vec();
+        // let pk = "0409F9DF311E5421A150DD7D161E4BC5C672179FAD1833FC076BB08FF356F35020CCEA490CE26775A52DC6EA718CC1AA600AED05FBF35E084A6632F6072DA9AD13"
+        //     .as_bytes().to_vec();
+
+        let enckey = hex::decode("33393435323038463742323134344231334633364533384143364433394639353838393339333639323836304235314134324642383145463444463743354238".as_bytes()).unwrap().to_owned();
+        let pk = hex::decode("30343039463944463331314535343231413135304444374431363145344243354336373231373946414431383333464330373642423038464633353646333530323043434541343930434532363737354135324443364541373138434331414136303041454430354642463335453038344136363332463630373244413941443133".as_bytes()).unwrap().to_owned();
+        (enckey, pk)
     }
 
     #[test]
@@ -254,5 +376,12 @@ mod tests {
 
         let dec_str_buf = test_sm4(&plain_txt);
         println!("dec str: {}", dec_str_buf);
+    }
+
+    #[test]
+    fn test_gen_sm2_key() {
+        let (enc, pk) = generate_key_pair().unwrap();
+        println!("dec str: {}", hex::encode(enc));
+        println!("pk str: {}",hex::encode(pk));
     }
 }
