@@ -364,6 +364,10 @@ pub async fn connect_tcp_outbound(
 ) -> io::Result<Option<AnyStream>> {
     match TcpOutboundHandler::connect_addr(handler.as_ref()) {
         Some(OutboundConnect::Proxy(addr, port)) => {
+            {
+                let mut proxy_addr = sess.proxy_addr.lock().unwrap();
+                proxy_addr.replace((addr.to_owned(), port)).unwrap();
+            }
             Ok(Some(new_tcp_stream(dns_client, &addr, &port).await?))
         }
         Some(OutboundConnect::Direct) => Ok(Some(

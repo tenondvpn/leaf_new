@@ -493,6 +493,7 @@ pub struct GlobalConfig {
     pub symmetric_cryptograph_type: ::std::option::Option<EncMethodEnum>,
     pub server_config: ::protobuf::SingularField<::std::string::String>,
     pub check_value: ::protobuf::SingularField<::std::string::String>,
+    pub client_unique_id: ::std::option::Option<u64>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -639,6 +640,25 @@ impl GlobalConfig {
     pub fn take_check_value(&mut self) -> ::std::string::String {
         self.check_value.take().unwrap_or_else(|| ::std::string::String::new())
     }
+
+    // optional uint64 client_unique_id = 6;
+
+
+    pub fn get_client_unique_id(&self) -> u64 {
+        self.client_unique_id.unwrap_or(0)
+    }
+    pub fn clear_client_unique_id(&mut self) {
+        self.client_unique_id = ::std::option::Option::None;
+    }
+
+    pub fn has_client_unique_id(&self) -> bool {
+        self.client_unique_id.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_client_unique_id(&mut self, v: u64) {
+        self.client_unique_id = ::std::option::Option::Some(v);
+    }
 }
 
 impl ::protobuf::Message for GlobalConfig {
@@ -669,6 +689,13 @@ impl ::protobuf::Message for GlobalConfig {
                 5 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.check_value)?;
                 },
+                6 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint64()?;
+                    self.client_unique_id = ::std::option::Option::Some(tmp);
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -696,6 +723,9 @@ impl ::protobuf::Message for GlobalConfig {
         if let Some(ref v) = self.check_value.as_ref() {
             my_size += ::protobuf::rt::string_size(5, &v);
         }
+        if let Some(v) = self.client_unique_id {
+            my_size += ::protobuf::rt::value_size(6, v, ::protobuf::wire_format::WireTypeVarint);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -716,6 +746,9 @@ impl ::protobuf::Message for GlobalConfig {
         }
         if let Some(ref v) = self.check_value.as_ref() {
             os.write_string(5, &v)?;
+        }
+        if let Some(v) = self.client_unique_id {
+            os.write_uint64(6, v)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -764,6 +797,7 @@ impl ::protobuf::Clear for GlobalConfig {
         self.symmetric_cryptograph_type = ::std::option::Option::None;
         self.server_config.clear();
         self.check_value.clear();
+        self.client_unique_id = ::std::option::Option::None;
         self.unknown_fields.clear();
     }
 }

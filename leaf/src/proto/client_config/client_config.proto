@@ -34,18 +34,18 @@ message CryptoMethodInfo {
 message RustMessage {
   optional uint64 timestamp = 1;
   optional RustMessage message_type =2;
-  optional bytes protobuf_bytes = 3;
+  optional string data = 3; // Json
 }
 message ErrorRustMessage {
   optional ErrorType error_type =1;
-  optional string msg=2; // msg 一般用来打印堆栈。
+  optional string error_msg=2; // msg 一般用来打印堆栈。
 }
 enum ErrorType {
   change_password_timeout = 1; // 与服务端交换密钥超时
 }
 
 enum RustMessageType {
-  R_ERROR = 1;
+  ERROR_EVENT = 1;
 }
 
 

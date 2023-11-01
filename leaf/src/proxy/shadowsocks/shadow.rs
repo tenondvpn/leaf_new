@@ -15,7 +15,7 @@ use crate::common::crypto::{
     aead::{AeadCipher, AeadDecryptor, AeadEncryptor},
     Cipher, Decryptor, Encryptor, SizedCipher,
 };
-use crate::proxy::shadowsocks::ss_router::check_and_refresh_routes;
+use crate::proxy::shadowsocks::ss_router::check_special_tag_in_stream;
 
 use super::crypto::{hkdf_sha1, kdf, ShadowsocksNonceSequence};
 
@@ -183,7 +183,7 @@ where
                     let dec = me.dec.as_mut().expect("uninitialized cipher");
                     dec.decrypt(&mut me.read_buf).map_err(|_| crypto_err())?;
 
-                    if check_and_refresh_routes(&mut me.read_buf) {
+                    if check_special_tag_in_stream(&mut me.read_buf) {
                         me.read_buf.clear();
                         me.read_state = ReadState::WaitingLength;
                     } else {
@@ -348,14 +348,14 @@ pub struct ShadowedDatagram {
 }
 
 impl ShadowedDatagram {
-    pub fn new(cipher: &str, password: &str) -> io::Result<Self> {
+    pub fn new(cipher: &str,  password: &[u8]) -> io::Result<Self> {
         let cipher = AeadCipher::new(cipher).map_err(|e| {
             io::Error::new(
                 io::ErrorKind::Other,
                 format!("create AEAD cipher failed: {}", e),
             )
         })?;
-        let psk = kdf(password.as_bytes(), cipher.key_len()).map_err(|e| {
+        let psk = kdf(password, cipher.key_len()).map_err(|e| {
             io::Error::new(io::ErrorKind::Other, format!("derive key failed: {}", e))
         })?;
         Ok(ShadowedDatagram { cipher, psk })

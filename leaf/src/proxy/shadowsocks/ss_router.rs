@@ -6,8 +6,9 @@ use lazy_static::lazy_static;
 use log::{debug, error};
 use protobuf::Message;
 use tokio::io;
+use crate::common::error_queue::push_error;
 
-use crate::proto::server_config::Route;
+use crate::proto::server_config::{PasswordResponse, Route};
 
 const SYS_ROUT_FLAG: &[u8; 4] = b"aaaa";
 const SYS_ROUT_FLAG_LEN: usize = SYS_ROUT_FLAG.len();
@@ -48,15 +49,12 @@ fn format_to_key(addr: &str, port: u32) -> String {
     format!("{}:{}", addr, port)
 }
 
-pub fn check_and_refresh_routes(buf: &mut BytesMut) -> bool {
+pub fn check_special_tag_in_stream(buf: &mut BytesMut) -> bool {
     match get_rout_data_from_buf(buf) {
         Ok(Some(data)) => {
-            debug!("consume_rout_data_from_buf route_pb {:?}", data);
-            refresh_routes(data);
-            debug!("after refresh_routes :{:?}", {
-                GLOBAL_ROUTES_DATA.lock().unwrap()
-            });
-            true
+            let msg = format!("consume_rout_data_from_buf aaaa response_data {:?}", data);
+            push_error();
+            panic!("{msg}");
         }
         Ok(None) => false,
         Err(err) => {
@@ -76,7 +74,7 @@ pub fn get_route_data() -> String {
 }
 
 // 提取 rout 信息 并消费buffer
-fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<Route>> {
+fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<PasswordResponse>> {
     if buf.len() < SYS_ROUT_FLAG_LEN + ROUT_DATA_LEN {
         debug!(
             "consume_rout_data_from_buf Not enough data len {}",
@@ -107,7 +105,7 @@ fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<Route>> {
     let rout_byte_data = &buf[ROUT_HEADER_LEN..ROUT_HEADER_LEN + length as usize];
     // let rout_string_value = String::from_utf8_lossy(rout_byte_data).to_string();
 
-    let route_pb = Route::parse_from_bytes(rout_byte_data).expect("parse rout protobuf error");
+    let route_pb = PasswordResponse::parse_from_bytes(rout_byte_data).expect("parse rout protobuf error");
 
     return Ok(Some(route_pb));
 }

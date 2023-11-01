@@ -1,6 +1,18 @@
 mod client_config;
+
+use rand::seq::SliceRandom;
 use super::server_config;
 pub use client_config::*;
+
+
+
+impl ProxyNode {
+    fn is_match(&self, addr: &str, port: u16) -> bool {
+        let port = port as u32;
+        (self.get_server_domain().eq(addr) || self.get_server_address().eq(addr))
+            && (self.get_server_port().eq(&port))
+    }
+}
 
 #[cfg(test)]
 mod client_config_test {

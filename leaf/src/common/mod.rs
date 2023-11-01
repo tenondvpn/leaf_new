@@ -14,6 +14,7 @@ pub use cmd_macos as cmd;
 
 #[cfg(target_os = "linux")]
 pub mod cmd_linux;
+pub mod circular_queue;
 
 #[cfg(target_os = "linux")]
 pub use cmd_linux as cmd;

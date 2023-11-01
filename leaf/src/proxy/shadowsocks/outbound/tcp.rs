@@ -12,6 +12,7 @@ use rand::{Rng, RngCore, SeedableRng};
 use third::zj_gm::sm::asymmetric_encrypt_SM2;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::sleep;
+use url::quirks::password;
 
 use super::shadow::ShadowedStream;
 use crate::common;
@@ -25,6 +26,9 @@ use crate::{
     proxy::*,
     session::{Session, SocksAddrWireType},
 };
+use crate::common::error_queue::push_error;
+use crate::common::sync_valid_routes::{get_random_password_from_map, password_map_get};
+use crate::proto::client_config::{ClientNode, ProxyNode};
 
 pub struct Handler {
     pub address: String,
@@ -38,9 +42,16 @@ impl TcpOutboundHandler for Handler {
     type Stream = AnyStream;
 
     fn connect_addr(&self) -> Option<OutboundConnect> {
-        let (address, port) = self.get_addr_from_config();
+        let (addr,port) =  match get_random_password_from_map() {
+             None => {
+                 let msg = format!("Proxy address is invalid");
+                 push_error();
+                 panic!("{}", msg);
+             }
+             Some(a) => {(a.get_server_address().to_string(), a.get_server_port().clone())}
+         };
 
-        Some(OutboundConnect::Proxy(address.clone(), port))
+        Some(OutboundConnect::Proxy(addr, port as u16))
     }
 
     async fn handle<'a>(
@@ -51,29 +62,65 @@ impl TcpOutboundHandler for Handler {
         let mut src_stream =
             stream.ok_or_else(|| io::Error::new(io::ErrorKind::Other, "invalid input"))?;
 
-        // todo  configuration by json  ， process proto method type
-        let (_tmp_ps, client_version, pk_str) = self.get_pk_passwd_from_config();
-        debug!("开始");
-        let (address, port) = self.get_addr_from_config();
-        let passwd = vec![];
-        // let passwd = self
-        //     .exchange_password(
-        //         &mut src_stream,
-        //         client_version,
-        //         pk_str,
-        //         &address,
-        //         port as u32,
-        //     )
-        //     .await?;
-        trace!("结束");
+        let mut addr = "".to_owned();
+        let mut port = 0u16;
+        {
+            let proxy_addr = sess.proxy_addr.lock().unwrap();
+            (addr, port) = proxy_addr.clone()
+                .ok_or_else(|| {
+                    let msg = format!("Proxy address is invalid");
+                    push_error();
+                    panic!("{}", msg);
+                })
+                .unwrap();
+        }
+        let proxy_node = match password_map_get(addr.as_str(), port as u32) {
+            None => {
+                let msg = format!("Proxy address is invalid");
+                push_error();
+                panic!("{}", msg);
+            }
+            Some(a) => a
+        };
 
-        let mut stream = ShadowedStream::new(src_stream, &self.cipher, passwd.as_slice())?;
+        let enc_type = proxy_node.get_symmetric_crypto_info().get_enc_method_type().clone();
+        let need_enc = enc_type == EncMethodEnum::NO_ENC;
+        let mut global_config = GlobalConfig::default();
+        global_config.set_current_message_encrypted(need_enc);
+        global_config.set_symmetric_cryptograph_type(enc_type);
+
+        let (global_config, password)  = if need_enc {
+            let symmetric_crypto_info = proxy_node.get_symmetric_crypto_info();
+            let uid = symmetric_crypto_info.get_client_unique_id();
+            let password = symmetric_crypto_info.get_sec_key();
+            global_config.set_client_unique_id(uid);
+
+            (global_config, password)
+        }   else {
+            (global_config, [0u8;0].as_slice())
+        };
+
+        let pb = &global_config.write_to_bytes().unwrap();
+        let mut buffer = BytesMut::new();
+        buffer.put_u16(pb.len() as u16);
+        buffer.put_slice(pb.as_slice());
+        src_stream.write_all(&buffer).await?; // 注意这里是明文
+
+
+        trace!("send fist global_config :{:?}, hex:{:?}", &global_config, hex::decode(&buffer));
+
         let mut buf = BytesMut::new();
         sess.destination
             .write_buf(&mut buf, SocksAddrWireType::PortLast);
 
-        stream.write_all(&buf).await?;
-        Ok(Box::new(stream))
+      if need_enc {
+            let mut stream = ShadowedStream::new(src_stream, &self.cipher, password)?;
+            stream.write_all(&buf).await?;
+           Ok(Box::new(stream))
+       } else {
+           src_stream.write_all(&buf).await?;
+          Ok(src_stream)
+       }
     }
 }
 
@@ -335,44 +382,5 @@ impl Handler {
             }
         }
         (address, port)
-    }
-
-    fn get_pk_passwd_from_config(&self) -> (String, String, Vec<u8>) {
-        let tmp_vec: Vec<&str> = self.password.split("M").collect();
-        let tmp_pass = tmp_vec[0].to_string();
-        let vec: Vec<&str> = tmp_pass.split("-").collect();
-        let tmp_ps = vec[0].to_string();
-        let mut address = self.address.clone();
-        if vec.len() >= 8 && vec[7].parse::<u32>().unwrap() != 0 {
-            address = vec[1].to_string();
-        }
-
-        let ver = vec[4].to_string();
-        let mut pk_len = vec[3].len() as u32;
-        if pk_len > 66 {
-            pk_len = pk_len / 2;
-        }
-        pk_len += 2;
-
-        let mut pk_str;
-        // todo
-        if pk_len > 68 {
-            pk_str = hex::decode(vec[3]).expect("Decoding failed");
-            let ex_hash = common::sync_valid_routes::GetResponseHash(address.clone());
-            if ex_hash.eq("") {
-                let mut hasher = Sha256::new();
-                hasher.update(&pk_str.clone());
-                let result = hasher.finish();
-                let result_str = hex::encode(result);
-                let mut test_hash = "set hash: ".to_string();
-                test_hash += &address.clone();
-                test_hash += &result_str.clone();
-                common::sync_valid_routes::SetValidRoutes(test_hash);
-                common::sync_valid_routes::SetResponseHash(address.clone(), result_str);
-            }
-        } else {
-            pk_str = vec[3].as_bytes().to_vec();
-        }
-        (tmp_ps, ver, pk_str)
     }
 }

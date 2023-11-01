@@ -1,5 +1,9 @@
 // @generated
 mod server_config;
+
+use std::error::Error;
+use std::io;
+use protobuf::Message;
 pub use server_config::*;
 
 impl ServerConfig {
@@ -33,3 +37,4 @@ impl EncMethodEnum {
         }
     }
 }
+

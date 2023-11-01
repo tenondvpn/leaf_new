@@ -140,7 +140,7 @@ impl ExternalUdpOutboundHandler for UdpHandler {
                 return Err(io::Error::new(io::ErrorKind::Other, "invalid input"));
             };
 
-            let dgram = ShadowedDatagram::new(&self.cipher, &self.password)?;
+            let dgram = ShadowedDatagram::new(&self.cipher, &self.password.as_bytes())?;
 
             let destination = match &sess.destination {
                 SocksAddr::Domain(domain, port) => {

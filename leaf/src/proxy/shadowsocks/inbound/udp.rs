@@ -28,7 +28,7 @@ impl UdpInboundHandler for Handler {
         &'a self,
         socket: Self::UDatagram,
     ) -> io::Result<InboundTransport<Self::UStream, Self::UDatagram>> {
-        let dgram = ShadowedDatagram::new(&self.cipher, &self.password)?;
+        let dgram = ShadowedDatagram::new(&self.cipher, &self.password.as_bytes())?;
         Ok(InboundTransport::Datagram(
             Box::new(Datagram { dgram, socket }),
             None,

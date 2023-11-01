@@ -1,7 +1,8 @@
 //extern crate easy_http_request;
 use std::collections::HashMap;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 use std::time::Duration;
 use futures_util::TryFutureExt;
 
@@ -9,22 +10,23 @@ use futures_util::TryFutureExt;
 use lazy_static::lazy_static;
 use log::{error, trace};
 use protobuf::Message;
-use rand::{RngCore, SeedableRng};
+use rand::{Rng, RngCore, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
+use rand::seq::IteratorRandom;
 use tokio::time::timeout;
 
 use third::zj_gm::sm::{asymmetric_decrypt_SM2, asymmetric_encrypt_SM2, generate_key_pair, sig_SM2, verify_SM2};
 
 use crate::common::error_queue::push_error;
 use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
-use crate::proto::server_config::{GlobalConfig, PasswordResponse, PasswordResponseData, ResponseStatusEnum, ServerConfig};
+use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, PasswordResponseData, ResponseStatusEnum, ServerConfig};
 
 lazy_static! {
     static ref valid_routes: Mutex<String> = Mutex::new(String::from(""));
     static ref valid_tmp_id: Mutex<String> = Mutex::new(String::from(""));
     static ref started: Mutex<u32> = Mutex::new(0);
     static ref connection_map: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref password_map: Mutex<HashMap<String, ProxyNode>> = Mutex::new(HashMap::new());
+    static ref password_map: RwLock<HashMap<String, ProxyNode>> = RwLock::new(HashMap::new());
     static ref password_not_empty_notify : tokio::sync::Notify = tokio::sync::Notify::new();
 }
 
@@ -35,7 +37,9 @@ lazy_static! {
     tokio::spawn(async move {
         for proxy_node in client_node.mut_node_list() {
             let login_info_c = loginfo.clone();
-            exchange_password_by_http(proxy_node, login_info_c);
+            if proxy_node.get_symmetric_crypto_info().get_enc_method_type() != EncMethodEnum::NO_ENC {
+                exchange_password_by_http(proxy_node, login_info_c);
+            }
             save_enc_2_cache(proxy_node);
         }
     });
@@ -93,6 +97,7 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
     } else {
         push_error();
         panic!();
+        // todo: 不要直接panic！
     };
 }
 
@@ -161,7 +166,7 @@ fn gen_password(p0: Vec<u8>, p1: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
 
 fn save_enc_2_cache(p0: &ProxyNode) {
     password_not_empty_notify.notify_one();
-    set_password_map(p0);
+    set_password_map_set(p0);
 }
 
 fn build_global_conf(proxy_node: &ProxyNode, log_info: String) -> Result<(GlobalConfig, String), Box<dyn Error>> {
@@ -262,11 +267,34 @@ pub fn GetResponseHash(svr_add: String) -> String {
     val.to_string()
 }
 
-pub fn set_password_map(proxy_node: &ProxyNode) {
-    let key = format!("{}:{}", proxy_node.get_server_port(), proxy_node.get_server_port());
-    let mut map = password_map.lock().unwrap();
+pub fn set_password_map_set(proxy_node: &ProxyNode) {
+    let key = format!("{}:{}", proxy_node.get_server_address(), proxy_node.get_server_port());
+    let mut map = password_map.write().unwrap();
     map.insert(key, proxy_node.to_owned());
 }
+
+pub fn password_map_get(server_address:&str, server_port:u32) -> Option<ProxyNode> {
+    let key = format!("{}:{}", &server_address, server_port);
+    let mut map = read_password_map();
+    map.get(key.as_str()).cloned()
+}
+
+fn read_password_map<'a>() -> RwLockReadGuard<'a, HashMap<String, ProxyNode>> {
+    password_map.read().expect("Failed to acquire read lock for password_map")
+}
+
+pub fn get_random_password_from_map() -> Option<ProxyNode> {
+    let map =  password_map.read().expect("Failed to acquire read lock for password_map");
+    let mut rng = thread_rng();
+    let random_index = rng.gen_range(0..map.len());
+
+    if let Some(node) = map.values().nth(random_index) {
+        Some(node.clone())
+    } else {
+        None
+    }
+}
+
 
 fn use_test_server_key() -> (Vec<u8>, Vec<u8>) {
     // let enckey = "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8"
