@@ -6,7 +6,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use protobuf::Message;
-use regex::Regex;
+use regex::{Regex, Replacer};
 
 use crate::config::{external_rule, internal};
 
@@ -331,11 +331,20 @@ pub fn from_lines(lines: Vec<io::Result<String>>) -> Result<Config> {
             continue;
         }
         proxy.tag = tag.to_string();
-        let params = if let Some(p) = get_char_sep_slice(parts[1], ',') {
+
+        let pass: Vec<&str> = parts[1].split("password=").collect();
+        let mut params = if let Some(p) = get_char_sep_slice(pass[0], ',') {
             p
         } else {
             continue;
         };
+
+        if  pass.len() == 2 {
+            let password_content = format!("password={}", &pass[1]);
+            params.push(password_content.to_string());
+        }
+
+
         if params.is_empty() {
             // there must be at least one param, i.e. the protocol field
             continue;

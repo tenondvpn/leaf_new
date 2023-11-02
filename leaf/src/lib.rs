@@ -9,7 +9,7 @@ use std::sync::Once;
 
 use anyhow::anyhow;
 use lazy_static::lazy_static;
-use log::debug;
+use log::{debug, trace};
 #[cfg(feature = "auto-reload")]
 use notify::{
     event, Error as NotifyError, RecommendedWatcher, RecursiveMode, Result as NotifyResult, Watcher,
@@ -28,6 +28,7 @@ use third::zj_gm::sm::{sm3_hash, test_sm4};
 use crate::app::api::api_server::ApiServer;
 #[cfg(feature = "stat")]
 use crate::app::{stat_manager::StatManager, SyncStatManager};
+use crate::common::sync_valid_routes::read_password_map;
 
 pub mod app;
 pub mod common;
@@ -421,7 +422,14 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
         OutboundManager::new(&config.outbounds, dns_client.clone()).map_err(Error::Config)?,
     ));
     // 等待交换密钥完成
+    trace!("等待交换密钥完成");
     rt.block_on(common::sync_valid_routes::wait_for_password_notification());
+    {
+        let map = read_password_map();
+        trace!("read_password_map:{:?}", map);
+    }
+    trace!("密钥交换完成");
+
 
     let router = Arc::new(RwLock::new(Router::new(
         &mut config.router,
@@ -546,17 +554,22 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
     // The main task joining all runners.
     tasks.push(Box::pin(async move {
         futures::future::join_all(runners).await;
+        trace!("all runners has finished");
     }));
 
     // Monitor shutdown signal.
     tasks.push(Box::pin(async move {
         let _ = shutdown_rx.recv().await;
+        trace!("Monitor shutdown signal");
+
     }));
 
     // Monitor ctrl-c exit signal.
     #[cfg(feature = "ctrlc")]
     tasks.push(Box::pin(async move {
         let _ = tokio::signal::ctrl_c().await;
+        trace!("Monitor ctrl-c exit signal.");
+
     }));
 
     RUNTIME_MANAGER

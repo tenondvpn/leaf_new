@@ -42,6 +42,8 @@ impl TcpOutboundHandler for Handler {
     type Stream = AnyStream;
 
     fn connect_addr(&self) -> Option<OutboundConnect> {
+        trace!("connect tcp addr");
+
         let (addr,port) =  match get_random_password_from_map() {
              None => {
                  let msg = format!("Proxy address is invalid");
@@ -59,6 +61,7 @@ impl TcpOutboundHandler for Handler {
         sess: &'a Session,
         stream: Option<Self::Stream>,
     ) -> io::Result<Self::Stream> {
+        trace!("handle tcp stream");
         let mut src_stream =
             stream.ok_or_else(|| io::Error::new(io::ErrorKind::Other, "invalid input"))?;
 

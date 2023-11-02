@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use log::trace;
 use protobuf::Message;
 
 use crate::app::dispatcher::Dispatcher;

@@ -5,6 +5,7 @@ use rand::{RngCore, SeedableRng};
 
 #[test]
 fn test_demo() {
+    // setup_test_logger();
     let config_path = "config.conf".to_string();
     let opts = leaf::StartOptions {
         config: leaf::Config::File(config_path),
@@ -13,7 +14,28 @@ fn test_demo() {
         runtime_opt: leaf::RuntimeOption::MultiThreadAuto(1 * 1024 * 1024),
     };
     leaf::start(0, opts).unwrap();
+
+
 }
+
+
+pub fn setup_test_logger(){
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Trace)
+        .chain(std::io::stdout())
+        .chain(fern::log_file("output.log").unwrap())
+        .apply().unwrap();
+}
+
 
 #[test]
 fn test_rng() {

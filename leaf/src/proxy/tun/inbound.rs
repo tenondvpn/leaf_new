@@ -1,3 +1,4 @@
+use std::io::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -66,6 +67,8 @@ async fn handle_inbound_datagram(
     nat_manager: Arc<NatManager>,
     fakedns: Arc<FakeDns>,
 ) {
+    trace!("Received packet");
+
     // The socket to receive/send packets from/to the netstack.
     let (ls, mut lr) = socket.split();
     let ls = Arc::new(ls);
@@ -78,6 +81,8 @@ async fn handle_inbound_datagram(
     let ls_cloned = ls.clone();
     tokio::spawn(async move {
         while let Some(pkt) = l_rx.recv().await {
+            trace!("Received udppacket");
+
             let src_addr = match pkt.src_addr {
                 SocksAddr::Ip(a) => a,
                 SocksAddr::Domain(domain, port) => {
@@ -238,18 +243,33 @@ pub fn new(
 
         // Reads packet from stack and sends to TUN.
         futs.push(Box::pin(async move {
+            trace!("wait a Reads packet from stack and sends to TUN");
+
             while let Some(pkt) = stack_stream.next().await {
+                trace!("recive a Reads packet from stack and sends to TUN");
+
                 if let Ok(pkt) = pkt {
-                    tun_sink.send(TunPacket::new(pkt)).await.unwrap();
+                   match  tun_sink.send(TunPacket::new(pkt)).await{
+                       Ok(_) => {}
+                       Err(e) => { error!("error :{}", e);}
+                   };
                 }
             }
         }));
 
         // Reads packet from TUN and sends to stack.
         futs.push(Box::pin(async move {
+            trace!("wait a Reads packet from TUN and sends to stack");
             while let Some(pkt) = tun_stream.next().await {
+                trace!("recive a Reads packet from TUN and sends to stack");
+
                 if let Ok(pkt) = pkt {
-                    stack_sink.send(pkt.get_bytes().to_vec()).await.unwrap();
+                   match stack_sink.send(pkt.get_bytes().to_vec()).await {
+                       Ok(_) => {}
+                       Err(e) => { error!("error :{}", e);}
+                   };
+                } else {
+                    error!("error :{:?}", pkt);
                 }
             }
         }));
@@ -258,7 +278,10 @@ pub fn new(
         let inbound_tag_cloned = inbound_tag.clone();
         let fakedns_cloned = fakedns.clone();
         futs.push(Box::pin(async move {
+            // trace!("wait a tcp connection");
+
             while let Some((stream, local_addr, remote_addr)) = tcp_listener.next().await {
+                // trace!("received a tcp connection");
                 tokio::spawn(handle_inbound_stream(
                     stream,
                     local_addr,
@@ -273,10 +296,13 @@ pub fn new(
         // Receive and send UDP packets between netstack and NAT manager. The NAT
         // manager would maintain UDP sessions and send them to the dispatcher.
         futs.push(Box::pin(async move {
+            info!("handle_inbound_datagram");
+
             handle_inbound_datagram(udp_socket, inbound_tag, nat_manager, fakedns.clone()).await;
         }));
 
         info!("start tun inbound");
-        futures::future::select_all(futs).await;
+        let x = futures::future::select_all(futs).await;
+        info!("end tun inbound:{:?}", x.1);
     }))
 }

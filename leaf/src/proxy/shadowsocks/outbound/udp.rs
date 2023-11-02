@@ -34,6 +34,8 @@ impl UdpOutboundHandler for Handler {
     type Datagram = AnyOutboundDatagram;
 
     fn connect_addr(&self) -> Option<OutboundConnect> {
+        trace!("handle udp addr");
+
         let client_node: ClientNode = serde_json::from_str(&self.password).unwrap();
         let (addr,port) =  match get_random_password_from_map() {
             None => {
@@ -56,6 +58,7 @@ impl UdpOutboundHandler for Handler {
         sess: &'a Session,
         transport: Option<OutboundTransport<Self::UStream, Self::Datagram>>,
     ) -> io::Result<Self::Datagram> {
+        trace!("handle udp stream");
 
         let proxy_node =  match get_random_password_from_map() {
             None => {

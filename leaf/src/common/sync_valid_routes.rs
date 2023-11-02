@@ -31,6 +31,7 @@ lazy_static! {
 }
 
  pub fn exchange_enc_password(json: String) {
+     trace!("password :{:?}", &json);
     let mut client_node: ClientNode = serde_json::from_str(&json).unwrap();
     let loginfo = client_node.get_user_login_information().to_owned();
 
@@ -166,6 +167,7 @@ fn gen_password(p0: Vec<u8>, p1: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
 
 fn save_enc_2_cache(p0: &ProxyNode) {
     password_not_empty_notify.notify_one();
+    trace!("密钥交换完成：{:?}", &p0);
     set_password_map_set(p0);
 }
 
@@ -279,7 +281,7 @@ pub fn password_map_get(server_address:&str, server_port:u32) -> Option<ProxyNod
     map.get(key.as_str()).cloned()
 }
 
-fn read_password_map<'a>() -> RwLockReadGuard<'a, HashMap<String, ProxyNode>> {
+pub fn read_password_map<'a>() -> RwLockReadGuard<'a, HashMap<String, ProxyNode>> {
     password_map.read().expect("Failed to acquire read lock for password_map")
 }
 
