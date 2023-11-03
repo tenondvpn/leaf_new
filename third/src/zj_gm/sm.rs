@@ -167,14 +167,15 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
     let mut out_txt_box = Box::new(vec![0u8; plain_txt.len() + 220]);
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len_box = Box::new(&mut out_len);
+    let id = "123".to_string();
     unsafe {
         println!("sec_key.len:{}", sec_key.len());
         match sign(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
-            pk.as_ptr() as *const i8,
-            0,
-            pk.as_ptr() as *const i8,
+            id.as_ptr() as *const i8,
+            id.as_bytes().len() as size_t,
+            Box::new(pk.to_vec()).as_ptr() as *const i8,
             pk.len() as size_t,
             sec_key.as_ptr() as *const i8,
             sec_key.len() as size_t,
@@ -195,13 +196,15 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
 
 
 pub fn verify_SM2(plain_txt: &[u8], signature:&[u8], pk: &[u8]) -> i32 {
+    let id = "123".to_string();
+
     unsafe {
         println!("pk.len:{}", pk.len());
         verify(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
-            Box::new(vec![0i8;1]).as_ptr(),
-            0,
+            id.as_ptr() as *const i8,
+            id.as_bytes().len() as size_t,
             signature.as_ptr(),
             signature.len() as size_t,
             Box::new(pk.to_vec()).as_ptr() as *const i8,
