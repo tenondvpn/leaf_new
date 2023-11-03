@@ -166,6 +166,7 @@ lru = "0.7"
 # Logging
 log = { version = "0.4", features = ["std"] }
 fern = { version = "0.6", features = ["colored"] }
+android_logger = "0.10"
 chrono = "0.4"
 colored = "2.0"
 

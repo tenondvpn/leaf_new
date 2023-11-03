@@ -9,7 +9,7 @@ use std::sync::Once;
 
 use anyhow::anyhow;
 use lazy_static::lazy_static;
-use log::{debug, trace};
+use log::{debug, Level, trace};
 #[cfg(feature = "auto-reload")]
 use notify::{
     event, Error as NotifyError, RecommendedWatcher, RecursiveMode, Result as NotifyResult, Watcher,
@@ -405,10 +405,12 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
         .as_ref()
         .ok_or_else(|| Error::Config(anyhow!("empty log setting")))?;
     static ONCE: Once = Once::new();
-    ONCE.call_once(move || {
-        app::logger::setup_logger(log).expect("setup logger failed");
-    });
-
+    // ONCE.call_once(move || {
+    //     app::logger::setup_logger(log).expect("setup logger failed");
+    // });
+    android_logger::init_once(
+        android_logger::Config::default().with_min_level(Level::Trace).with_tag("myrust")
+    );
     let rt = new_runtime(&opts.runtime_opt)?;
     let _g = rt.enter();
 
