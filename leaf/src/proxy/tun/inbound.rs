@@ -243,10 +243,8 @@ pub fn new(
 
         // Reads packet from stack and sends to TUN.
         futs.push(Box::pin(async move {
-            trace!("wait a Reads packet from stack and sends to TUN");
 
             while let Some(pkt) = stack_stream.next().await {
-                trace!("recive a Reads packet from stack and sends to TUN");
 
                 if let Ok(pkt) = pkt {
                    match  tun_sink.send(TunPacket::new(pkt)).await{
@@ -259,9 +257,7 @@ pub fn new(
 
         // Reads packet from TUN and sends to stack.
         futs.push(Box::pin(async move {
-            trace!("wait a Reads packet from TUN and sends to stack");
             while let Some(pkt) = tun_stream.next().await {
-                trace!("recive a Reads packet from TUN and sends to stack");
 
                 if let Ok(pkt) = pkt {
                    match stack_sink.send(pkt.get_bytes().to_vec()).await {
@@ -296,13 +292,11 @@ pub fn new(
         // Receive and send UDP packets between netstack and NAT manager. The NAT
         // manager would maintain UDP sessions and send them to the dispatcher.
         futs.push(Box::pin(async move {
-            info!("handle_inbound_datagram");
 
             handle_inbound_datagram(udp_socket, inbound_tag, nat_manager, fakedns.clone()).await;
         }));
 
         info!("start tun inbound");
         let x = futures::future::select_all(futs).await;
-        info!("end tun inbound:{:?}", x.1);
     }))
 }

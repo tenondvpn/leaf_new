@@ -8,7 +8,7 @@ use futures_util::TryFutureExt;
 
 //use easy_http_request::DefaultHttpRequest;
 use lazy_static::lazy_static;
-use log::{error, trace};
+use log::{debug, error, trace};
 use protobuf::Message;
 use rand::{Rng, RngCore, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
@@ -38,8 +38,13 @@ lazy_static! {
     tokio::spawn(async move {
         for proxy_node in client_node.mut_node_list() {
             let login_info_c = loginfo.clone();
-            if proxy_node.get_symmetric_crypto_info().get_enc_method_type() != EncMethodEnum::NO_ENC {
+            let symmetric_crypto_method_type = proxy_node.get_symmetric_crypto_info().get_enc_method_type();
+            debug!{"symmetric_crypto_method_type:{:?}", symmetric_crypto_method_type};
+            if symmetric_crypto_method_type.eq(&EncMethodEnum::NO_ENC) {
+                debug!("need swap password");
                 exchange_password_by_http(proxy_node, login_info_c);
+            } else {
+                debug!("not need swap password");
             }
             save_enc_2_cache(proxy_node);
         }
@@ -48,7 +53,10 @@ lazy_static! {
 }
 
 pub async fn wait_for_password_notification() {
-    timeout(Duration::from_secs(2), password_not_empty_notify.notified())
+    timeout(Duration::from_secs(2), async move{
+        password_not_empty_notify.notified().await;
+        trace!("password_notification_ed");
+    } )
         .await
         .map_err(|error| push_error()).unwrap();
     //todo: notify vpn started status
@@ -324,7 +332,7 @@ mod tests {
     use protobuf::Message;
     use third::zj_gm::sm::asymmetric_decrypt_SM2;
     use crate::common::sync_valid_routes::{build_global_conf, exchange_password_by_http};
-    use crate::proto::client_config::{CryptoMethodInfo, ProxyNode};
+    use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
     use crate::proto::server_config::{EncMethodEnum, PasswordResponse, ResponseStatusEnum, ServerConfig};
 
     #[tokio::test]
@@ -364,6 +372,38 @@ mod tests {
         debug!("{url}");
     }
 
+
+    #[test]
+    pub fn test_node_list() {
+        let mut node1 = ProxyNode::new();
+        node1.set_server_address("10.101.20.31".to_string());
+        node1.set_server_port(19802);
+
+        let mut info = CryptoMethodInfo::new();
+        info.set_enc_method_type(EncMethodEnum::SM2);
+        let mut pk2 = "30343039463944463331314535343231413135304444374431363145344243354336373231373946414431383333464330373642423038464633353646333530323043434541343930434532363737354135324443364541373138434331414136303041454430354642463335453038344136363332463630373244413941443133";
+        info.set_server_pubkey(pk2.to_owned());
+
+        node1.set_asymmetric_crypto_info(info);
+
+        let mut info = CryptoMethodInfo::new();
+        info.set_enc_method_type(EncMethodEnum::SM4_GCM);
+
+        node1.set_symmetric_crypto_info(info);
+
+
+        let mut vec = Vec::new();
+        vec.push(node1);
+
+        let mut client_node = ClientNode::default();
+        client_node.set_node_list(vec.into());
+        let loginfo = "{\"username\":\"username\",\"login_timestamp\":\"1698739833\",\"rand_str\":\"123456\",\"app_version\":\"v1.0\",\"access_token\":\"2a17e53283d1c1aca454240895200331ca7f0e5294447d20f0336e2f8dcc31ce\",\"signature\":\"3046022100ab35122c562c338c5a519b2eac9fcd90fbd9f198a238f6501b824442cb5367820221008d2c26a84fcf10ca33cdf2ee303d2841f6c4496771ba084c528c022d490679ae\"}";
+        client_node.set_user_login_information(loginfo.to_string());
+
+        let json = serde_json::to_string_pretty(&client_node).unwrap();
+
+        println!("{}", json);
+    }
 
     fn setup_logger(){
         fern::Dispatch::new()
