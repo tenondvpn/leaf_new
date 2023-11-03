@@ -44,7 +44,7 @@ lazy_static! {
                 debug!("not need swap password");
 
             } else {
-                exchange_password_by_http(proxy_node, login_info_c);
+                exchange_password_by_http(proxy_node, login_info_c).await;
                 debug!("need swap password");
 
             }
