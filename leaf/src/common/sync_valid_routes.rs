@@ -41,10 +41,12 @@ lazy_static! {
             let symmetric_crypto_method_type = proxy_node.get_symmetric_crypto_info().get_enc_method_type();
             debug!{"symmetric_crypto_method_type:{:?}", symmetric_crypto_method_type};
             if symmetric_crypto_method_type.eq(&EncMethodEnum::NO_ENC) {
-                debug!("need swap password");
-                exchange_password_by_http(proxy_node, login_info_c);
-            } else {
                 debug!("not need swap password");
+
+            } else {
+                exchange_password_by_http(proxy_node, login_info_c);
+                debug!("need swap password");
+
             }
             save_enc_2_cache(proxy_node);
         }
