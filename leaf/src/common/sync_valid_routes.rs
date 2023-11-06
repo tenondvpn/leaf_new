@@ -60,7 +60,9 @@ pub async fn wait_for_password_notification() {
         trace!("password_notification_ed");
     } )
         .await
-        .map_err(|error| push_error()).unwrap();
+        .map_err(|error| {
+            println!("error: {}", error)
+        }).unwrap();
     //todo: notify vpn started status
 }
 
