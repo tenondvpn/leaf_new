@@ -149,7 +149,7 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
             let res = verify_SM2(plain_bin.as_slice(), signature.as_slice(), server_pk.as_slice()) ;
             trace!("error res :{res}");
 
-            panic!("{}", &msg);
+            // panic!("{}", &msg);
         }
     } ;
     trace!("exchange_password_by_http 4:1 verify_SM2 succeeded");
