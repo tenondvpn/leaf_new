@@ -200,16 +200,19 @@ fn sm2_encode(proxy_node: &ProxyNode, server_config: &mut ServerConfig) -> Resul
     let server_conf_bin = server_config.write_to_bytes().unwrap();
 
     let asymmetric_info = proxy_node.get_asymmetric_crypto_info();
-    let pk = hex::decode(asymmetric_info.get_server_pubkey())?;
-    trace!("pk==pk0:{:?}, pk:{:?}",&pk.eq(use_test_server_key().1.as_slice()), &pk);
+    let pk = hex::decode(&asymmetric_info.get_server_pubkey())?;
+    trace!("pk==pk0:{:?}, pk:{:?}",&pk.eq(&use_test_server_key().1.as_slice()), &pk);
     // todo: in the future we need use method_enum to handle encrypt method
-    let encrypt_content_1 = asymmetric_encrypt_SM2(server_conf_bin.as_slice(), pk.as_slice())?;
+    let encrypt_content_1 = asymmetric_encrypt_SM2(&server_conf_bin.as_slice(), &pk.as_slice())?;
     let encrypted_content = hex::encode(&encrypt_content_1);
 
 
-    let signature = sig_SM2(server_conf_bin.as_slice(), asymmetric_info.get_client_sec_key(), asymmetric_info.get_client_pk());
+    let signature = sig_SM2(&server_conf_bin.as_slice(), &asymmetric_info.get_client_sec_key(), &asymmetric_info.get_client_pk());
     let signature = hex::encode(&signature);
-    trace!("After  SM2 server_config: {:?} \n signature:{:?} \n client_enc_key:{}", &encrypted_content, &signature, hex::encode(asymmetric_info.get_client_sec_key()));
+    trace!("After  SM2 server_config: {:?} \n signature:{:?} \n client_enc_key:{} \n client_pk{}", &encrypted_content,
+        &signature,
+        hex::encode(&asymmetric_info.get_client_sec_key()),
+        hex::encode(&asymmetric_info.get_client_pk()));
     Ok((encrypted_content,signature))
 }
 

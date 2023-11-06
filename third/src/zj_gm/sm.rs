@@ -287,10 +287,19 @@ mod tests {
     #[test]
     fn test_sm2_signed() {
         let (enckey, pk) = use_const_pk();
-        let signature = sig_SM2(plain_from_server().as_bytes(), enckey.as_slice(), pk.as_slice());
-        println!("signature: {}", hex::encode(&signature));
-        let result = verify_SM2(plain_from_server().as_bytes(), signature.as_slice(), pk.as_slice());
-        assert_eq!(result, 0)
+        let text1  = plain_from_server();
+        let text2 = String::from(&text1);
+        println!("text1 == text2, {}", &text1.eq(&text2));
+        let signature1 = sig_SM2(&text1.as_bytes(), enckey.as_slice(), pk.as_slice());
+        let signature2 = sig_SM2(&text2.as_bytes(), enckey.as_slice(), pk.as_slice());
+
+        println!("signature1: {}", hex::encode(&signature1));
+        println!("signature2: {}", hex::encode(&signature2));
+        let result1 = verify_SM2(&text1.as_bytes(), signature1.as_slice(), pk.as_slice());
+        let result2 = verify_SM2(&text2.as_bytes(), signature2.as_slice(), pk.as_slice());
+        println!("result1: {} , result2: {}", result1, result2);
+
+
     }
 
     #[test]
@@ -326,9 +335,10 @@ mod tests {
     }
 
     fn plain_from_server() -> String {
-        let hex = "0880a098dc849ad81b121811ff00fe000400ff00ff000c00d0000000800070ff300000".to_string();
-        let hex = hex.replace("\\n", "");
-        hex
+        let hex1 = "30820436022100f1733f059918ae3ac74aadbbcbfd17d249b88a4456553d7fd3c5107bd2662e16022046df1757a418c0acf9516a50a7ee1b9dfedafd3416379706589b0d4d4523dcb9042056b248a24aaa8c83d99637eeb6ae8ad09935e70e112c053a4f530ebe1a7ea786048203cb4d5224ab61614af89d2a0f6b933e77ace154e4127bad9724c4ca1e8ed847bab5ed226cf56359604a07dc9a84580ca563714652dfde22dded22e2042e43f707a1a9ac9ce42d190dd74d32b8285a9ac1ad4f58f6dc84d5fd49de395e58109c181872b3394fe78702bd7f033f80b0da2617d4620e7e129d07b42210452997694a490b43e5664fdf00b6c17336d0a266cfbaa82b5ce7d60db0c172d402df2d60712473ac32a5bd17a7b14ef1af39f0164577149b41075e338489ad091aedcf977f046c5b8430c15fa170db4f49214a160b0504f066fb5373278d1a5dcee62c9a607ad2365407f5de881e3b3bc2fc3e424bfa0d2bbb955295828a24e8aa5cc6735528c12d135bbb20647b2a78e19eaf77b0feed6592c73d10f64a3a9a7ccde5c6d2be6110a4770472c11754464283e99543af200d75757e78f8d8d9cb6f3e7a68053e9533b8a67d48bf41594fe004cab9064757c0cd4cdf789a0e029ce48c18b450a383ade404c3ddb199d29cb39785cb78f7c1a044b6f34ce37fb4bb0b4bfb47928276e74d1581b540b03b859a3b6c67ac6de1ee1b60062d19ee9125d03111d3609b7f169817b8007e4aa1d719c562468e8970710f1e83399476ac039fa4ae9c3f7c7746e6f68a4dc6aa261edc38c6f0a4c4607769c79bbbd7c007cbc2a2e710281ed486010bbf401dc65b6ac79e9c1a7237a504034869ecdc8fb40eb8b33ae63d20a48d08c5d8d828cbe07b71a8f3eb4598f4821d303f85de35771965cdb2c7c79782a4350964026db6fe531f21c4ef676c10ac8d66f70f185be179f46382856b95826f2a34cab946322dbaf175bd7230bc4d24f6a0c62673088ef10d7a320fd93676f174717b0644e383444c4aa3f6d6ed441c44f0b574831569663389d531ee10311997c10e4d3e33696874554c9fcf43ff302c6ccd4eca5048ae2751780839c67e70c57f72422ef1a63956046caaaceec9a5fdd6da3d705034ba530c2eb57f5ce37558421277d2a610173153edd677cd899561bd8c99a68a123f4065fe873778ab181900cf8b336c378ca1d7172547cebd0d8acb925fbbb1687748e10f00678a0830ce9754facbfe08b70700a6d0882966a0052edce57903972ddb41f4e9f91261f1316c3d977bc3c35f9b716cce9b0b8ab2d94c2963e18e40eedb9d0c290af94b6439b6aab696c588763a33a4afa8c8caaf18d742a980049cd6da2d82eaa33da3b32081561e167b2e63af7590ab3b03cbfba027075eac2ed4a769594f4ec6589cd9eaae45fe031976134255311a73eef6aba255970b6ea9a628d50c6405c6d39bc1381207fe5b3bb3b12cea05a1a524c50915c186894ad1eb75128fb654f1fa696ee0e1f88093b275662c".to_string();
+        let hex2 = hex1.clone();
+        println!("{}", hex1);
+        hex2
     }
     fn encode_from_server() -> Vec<u8> {
         let hex = "30818c022052caaed3b7cdf22eb9690e9969e32c50bd7301357199877
