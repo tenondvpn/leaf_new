@@ -123,6 +123,7 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
 
 fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmetric_info: &CryptoMethodInfo) -> T {
     let client_sec = asymmetric_info.get_client_sec_key();
+    
 
     let plain_bin = asymmetric_decrypt_SM2(encode_data.as_slice(), client_sec).map_err(|err| push_error()).unwrap();
     #[cfg(test)]

@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::ops::Deref;
+use std::ffi::CString;
 use log::{error, trace};
 
 use crate::zj_gm::bindings;
@@ -111,13 +111,15 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, St
     let mut out_txt_box = Box::new(vec![0u8; plain_txt.len() + 220]);
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len_box = Box::new(&mut out_len);
+    let pk_len = pk.len();
+    let pk = CString::new(pk).unwrap();
     unsafe {
-        trace!("pk.len:{}", pk.len());
+        trace!("pk.len:{}", pk_len);
         match asymmetric_encrypt(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
-            pk.as_ptr() as *const i8,
-            pk.len() as size_t,
+            pk.as_ptr(),
+            pk_len as size_t,
             out_txt_box.as_mut_ptr(),
             *out_txt_len_box,
             asymmetric_cryptograph_t_SM2,
@@ -128,7 +130,7 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, St
             }
             i => {
                 let msg = format!("Error: symmetric encryption failed :{}", i);
-                error!("Error:  asymmetric_encrypt_SM2 failed :{}, \n pk:{}, \n input : {} ", i, hex::encode(&pk), hex::encode(&plain_txt));
+                error!("Error:  asymmetric_encrypt_SM2 failed :{}, \n pk:{}, \n input : {} ", i, hex::encode(&pk.as_bytes()), hex::encode(&plain_txt));
                 Err(msg)
             }
         }
@@ -140,15 +142,19 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, St
 pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[u8]) -> Result<Vec<u8>, String> {
     let mut out_txt_box = Box::new(vec![0u8; input.len() + 220]);
 
+    let private_len = private_key.len();
+    let private_key = CString::new(private_key).unwrap();
+
+
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len = Box::new(&mut out_len);
     unsafe {
-        trace!("private_key.len:{}", private_key.len());
+        trace!("private_key.len:{}", private_len);
         match asymmetric_decrypt(
             input.as_ptr(),
             input.len() as size_t,
-            private_key.as_ptr() as *const i8,
-            private_key.len() as size_t,
+            private_key.as_ptr(),
+            private_len as size_t,
             out_txt_box.as_mut_ptr(),
             *out_txt_len,
             asymmetric_cryptograph_t_SM2,
@@ -159,7 +165,7 @@ pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[u8]) -> Result<Vec<u8
             },
             i => {
                 let msg = format!("Error: symmetric decrypt failed :{}", i);
-                error!("Error: symmetric decrypt failed :{}, \n pri_key: {}, \n input : {} ", i, hex::encode(&private_key), hex::encode(&input));
+                error!("Error: symmetric decrypt failed :{}, \n pri_key: {}, \n input : {} ", i, hex::encode(&private_key.as_bytes()), hex::encode(&input));
 
                 Err(msg)
             }
@@ -171,29 +177,28 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len_box = Box::new(&mut out_len);
     let id = "123".to_string();
-    println!("AAAAAAAAAAAAAAAAAA: , \n pri_key: {:?}, \n pk:{:?}, \n input : {} ", String::from_utf8(sec_key.to_vec()), String::from_utf8(pk.to_vec()), hex::encode(&plain_txt));
+
+    let pk_len = pk.len();
+    let sec_len = sec_key.len();
+    let pk = CString::new(pk).unwrap();
+    let sec_key = CString::new(sec_key).unwrap();
     unsafe {
-
-
-
-
-        trace!("sec_key.len:{}", sec_key.len());
         match sign(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
             id.as_ptr() as *const i8,
             id.as_bytes().len() as size_t,
-            Box::new(pk.to_vec()).as_ptr() as *const i8,
-            pk.len() as size_t,
-            sec_key.as_ptr() as *const i8,
-            sec_key.len() as size_t,
+            pk.as_ptr(),
+            pk_len as size_t,
+            sec_key.as_ptr(),
+            sec_len as size_t,
             out_txt_box.as_mut_ptr(),
             *out_txt_len_box,
             asymmetric_cryptograph_t_SM2,
         ) {
             0 => {}
             i => {
-                error!("Error:  sig_SM2 failed :{}, \n pri_key: {}, \n pk:{}, \n input : {} ", i, hex::encode(&sec_key), hex::encode(&pk), hex::encode(&plain_txt));
+                error!("Error:  sig_SM2 failed :{}, \n pri_key: {}, \n pk:{}, \n input : {} ", i, hex::encode(&sec_key.as_bytes()), hex::encode(&pk.as_bytes()), hex::encode(&plain_txt));
 
             }
         };
@@ -207,8 +212,10 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
 pub fn verify_SM2(plain_txt: &[u8], signature:&[u8], pk: &[u8]) -> i32 {
     let id = "123".to_string();
 
+    let pk_len = pk.len();
+    let pk = CString::new(pk).unwrap();
     unsafe {
-        trace!("pk.len:{}", pk.len());
+        trace!("pk.len:{}", pk_len);
         verify(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
@@ -216,8 +223,8 @@ pub fn verify_SM2(plain_txt: &[u8], signature:&[u8], pk: &[u8]) -> i32 {
             id.as_bytes().len() as size_t,
             signature.as_ptr(),
             signature.len() as size_t,
-            Box::new(pk.to_vec()).as_ptr() as *const i8,
-            pk.len() as size_t,
+            pk.as_ptr(),
+            pk_len as size_t,
             asymmetric_cryptograph_t_SM2,
         )
     }
@@ -355,9 +362,9 @@ mod tests {
     #[test]
     fn test_asymmetric_encrypt_SM2_only() {
 
-        let sec = "39303131313863323165646338636638663735383265666663303265623036316134326537303235306633383838353465633532343665626564363031616265";
+        let sec = "36306565633565346163623339313830373437316532643038653338356131623132376561326633336635393662613732326564653634346530346535656535";
         let sec = hex::decode(sec).unwrap();
-        let output = "3081d5022100bceb067f3c9880eaa28fb5e05dba6b2cfe7b616e7403b073ea15b336175ab58e02210092929c0c1fd38d8697082087d3d05599abbb0357d75974abab987491caa3b82b042084ab41fd3282b39c8118ad746446cd5f4e929a181afd4eaceb662095470a3bbc046b0e0a9d2866cd813e8715e5cf44b176c89d318de3571ce6e4fe64215011382817d71ce334d59bf910abcc9e0d7d4bd0b7d6dc72a1a7493235270ff752f209dc55a9d221c3ba95ca48df89312a4d91fbd525c97274495be2da5aeae6aeed88f9dd7977a9ca4901df6645c30f";
+        let output = "3081d3022074a64cc2d926da3baa5d98a0b6b51fe25cb5411f141711c48ce103544d4b52fd02207787ba7f78b17f305398206f233debefe395e71f35373c621d66cc460b7c96670420a7dc164201717e66de8568ddfb2d36dceda5f93a54c3c880674d5b1c608d4bd0046bcc9b10ef2b662e32b673e72bcd5f485658f42c26e97dd0cff71e3a26ecbe92de4a86265ded68e20ecf045334a20d4151274859e897511e2c769bcdb95deb62d1bf6b62d767dfacce93647de9f4eaae84ed6aff2b5cfed30446da260e2d633a4d645d789e76c617a692ed89";
         let output = hex::decode(output).unwrap();
         let outPlaintext2 = asymmetric_decrypt_SM2(output.as_slice(), sec.as_slice()).unwrap();
         println!("outPlaintext2:{}", hex::encode(&outPlaintext2));
