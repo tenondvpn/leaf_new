@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::ops::Deref;
+use log::{error, trace};
 
 use crate::zj_gm::bindings;
 use crate::zj_gm::bindings::*;
@@ -98,7 +99,7 @@ pub fn generate_key_pair() -> Result<(Vec<u8>, Vec<u8>), String> {
             }
             i => {
                 let msg = format!("Error: generate_key_pair failed :{}", i);
-                println!("Error: symmetric encryption failed :{}", i);
+                error!("Error: symmetric encryption failed :{}", i);
                 Err(msg)
             }
         }
@@ -110,7 +111,7 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, St
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len_box = Box::new(&mut out_len);
     unsafe {
-        println!("pk.len:{}", pk.len());
+        trace!("pk.len:{}", pk.len());
         match asymmetric_encrypt(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
@@ -126,7 +127,7 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, St
             }
             i => {
                 let msg = format!("Error: symmetric encryption failed :{}", i);
-                println!("Error: symmetric encryption failed :{}", i);
+                error!("Error: symmetric encryption failed :{}", i);
                 Err(msg)
             }
         }
@@ -141,7 +142,7 @@ pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[u8]) -> Result<Vec<u8
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len = Box::new(&mut out_len);
     unsafe {
-        println!("private_key.len:{}", private_key.len());
+        trace!("private_key.len:{}", private_key.len());
         match asymmetric_decrypt(
             input.as_ptr(),
             input.len() as size_t,
@@ -157,7 +158,7 @@ pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[u8]) -> Result<Vec<u8
             },
             i => {
                 let msg = format!("Error: symmetric decrypt failed :{}", i);
-                println!("Error: symmetric decrypt failed :{}", i);
+                error!("Error: symmetric decrypt failed :{}", i);
                 Err(msg)
             }
         }
@@ -169,7 +170,7 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
     let out_txt_len_box = Box::new(&mut out_len);
     let id = "123".to_string();
     unsafe {
-        println!("sec_key.len:{}", sec_key.len());
+        trace!("sec_key.len:{}", sec_key.len());
         match sign(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
@@ -185,7 +186,7 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
         ) {
             0 => {}
             i => {
-                println!("Error: symmetric sig_SM2 failed :{}", i);
+                error!("Error: symmetric sig_SM2 failed :{}", i);
             }
         };
     }
@@ -199,7 +200,7 @@ pub fn verify_SM2(plain_txt: &[u8], signature:&[u8], pk: &[u8]) -> i32 {
     let id = "123".to_string();
 
     unsafe {
-        println!("pk.len:{}", pk.len());
+        trace!("pk.len:{}", pk.len());
         verify(
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
