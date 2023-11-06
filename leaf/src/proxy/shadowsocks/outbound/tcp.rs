@@ -109,7 +109,7 @@ impl TcpOutboundHandler for Handler {
         let mut buffer = BytesMut::new();
         buffer.put_u16(pb.len() as u16);
         buffer.put_slice(pb.as_slice());
-        trace!("send fist global_config :{:?}, hex:{:?}", &global_config, hex::decode(&buffer.to_vec()));
+        trace!("send fist global_config :{:?}, pb.len:{:?}, pb.hex:{:?}", &global_config,pb.len(),  hex::decode(pb.as_slice()));
         src_stream.write_all(&buffer).await?; // 注意这里是明文
 
 
