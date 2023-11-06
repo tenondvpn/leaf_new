@@ -85,6 +85,7 @@ pub use datagram::{
     SimpleInboundDatagram, SimpleInboundDatagramRecvHalf, SimpleInboundDatagramSendHalf,
     SimpleOutboundDatagram, SimpleOutboundDatagramRecvHalf, SimpleOutboundDatagramSendHalf,
 };
+use crate::common::error_queue::push_error;
 
 #[derive(Error, Debug)]
 pub enum ProxyError {
@@ -365,8 +366,16 @@ pub async fn connect_tcp_outbound(
     match TcpOutboundHandler::connect_addr(handler.as_ref()) {
         Some(OutboundConnect::Proxy(addr, port)) => {
             {
-                let mut proxy_addr = sess.proxy_addr.lock().unwrap();
+                debug!("starting repleacement");
+                let mut proxy_addr = sess.proxy_addr.lock()
+                    .map_err(|e| {
+                        push_error();
+                        errors!("初始化 sessiion 失败：{:?}", e);
+                    })
+                    .unwrap();
                 proxy_addr.replace((addr.to_owned(), port)).unwrap();
+                debug!("starting endrepleace");
+
             }
             Ok(Some(new_tcp_stream(dns_client, &addr, &port).await?))
         }
