@@ -200,6 +200,7 @@ fn build_global_conf(proxy_node: &ProxyNode, log_info: String) -> Result<(Global
     global_config.set_symmetric_cryptograph_type(proxy_node.get_symmetric_crypto_info().get_enc_method_type());
     global_config.set_server_config(encrypted_content);
     global_config.set_check_value(signature);
+    global_config.set_client_unique_id(0);
 
     Ok((global_config, server_config.get_random_content().to_owned()))
 }
