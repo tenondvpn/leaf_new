@@ -370,7 +370,7 @@ pub async fn connect_tcp_outbound(
                 let mut proxy_addr = sess.proxy_addr.lock()
                     .map_err(|e| {
                         push_error();
-                        errors!("初始化 sessiion 失败：{:?}", e);
+                        error!("初始化 sessiion 失败：{:?}", e);
                     })
                     .unwrap();
                 proxy_addr.replace((addr.to_owned(), port)).unwrap();
