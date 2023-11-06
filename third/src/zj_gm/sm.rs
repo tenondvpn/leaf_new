@@ -326,7 +326,7 @@ mod tests {
         // println!("text1 == text2, {}", &text1.eq(&text2));
         // let signature1 = sig_SM2(plain_from_server().as_bytes(), enckey.as_slice(), pk.as_slice());
 
-        let signature2 = sig_SM2(text1.as_bytes(), enckey.as_slice(), pk.as_slice());
+        // let signature2 = sig_SM2(text1.as_bytes(), enckey.as_slice(), pk.as_slice());
 
         let string1 = plain_from_server();
         let signature1 = sig_SM2(string1.as_bytes(), enckey.as_slice(), pk.as_slice());
