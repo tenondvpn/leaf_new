@@ -90,7 +90,10 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
     trace!("exchange_password_by_http 2: send proxy server succeeded");
     let res =res.text().await.unwrap();
     trace!("exchange_password_by_http2: response:{}", &res);
-    let res:PasswordResponse = serde_json::from_str(res.as_str()).unwrap();
+    let res:PasswordResponse = serde_json::from_str(res.as_str()).map_err(|error| {
+        error!("serde_json::from_str(PasswordResponse) error,{}", error);
+        push_error();
+    }).unwrap();
 
     trace!("exchange_password_by_http 3: map json succeeded");
 
@@ -310,7 +313,7 @@ fn is_password_map_empty() -> bool {
 pub fn wait_for_not_empty_password_map() {
     let mut time = 0;
     while is_password_map_empty() {
-        thread::sleep_ms(100);
+        thread::sleep_ms(1000);
         time = time + 1;
         trace!("Waiting for password time :{} * 100ms", &time);
     }
@@ -358,7 +361,7 @@ mod tests {
     use log::debug;
     use protobuf::Message;
     use third::zj_gm::sm::asymmetric_decrypt_SM2;
-    use crate::common::sync_valid_routes::{build_global_conf, exchange_enc_password, exchange_password_by_http};
+    use crate::common::sync_valid_routes::{build_global_conf, exchange_enc_password, exchange_password_by_http, wait_for_not_empty_password_map, wait_for_password_notification};
     use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
     use crate::proto::server_config::{EncMethodEnum, PasswordResponse, ResponseStatusEnum, ServerConfig};
 
@@ -459,6 +462,7 @@ mod tests {
         setup_logger();
         let string = get_node_list_test_json();
         exchange_enc_password(string.clone());
+        wait_for_password_notification().await;
     }
 
 
