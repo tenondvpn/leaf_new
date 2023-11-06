@@ -48,7 +48,7 @@ async fn health_check_task(
         };
         let start = tokio::time::Instant::now();
         let stream = match crate::proxy::connect_tcp_outbound(&sess, dns_client, &h).await {
-            Ok(s) => s,
+            Ok(s) => s.0,
             Err(_) => return Measure(i, u128::MAX),
         };
         match TcpOutboundHandler::handle(h.as_ref(), &sess, stream).await {
@@ -251,7 +251,7 @@ impl TcpOutboundHandler for Handler {
                         self.dns_client.clone(),
                         &self.actors[*idx],
                     )
-                    .await?;
+                    .await?.0;
                     TcpOutboundHandler::handle(self.actors[*idx].as_ref(), sess, stream).await
                 };
                 let task = timeout(time::Duration::from_secs(self.fail_timeout as u64), handle);
@@ -270,7 +270,7 @@ impl TcpOutboundHandler for Handler {
                     self.dns_client.clone(),
                     &self.last_resort.as_ref().unwrap(),
                 )
-                .await?;
+                .await?.0;
                 TcpOutboundHandler::handle(
                     self.last_resort.as_ref().unwrap().as_ref(),
                     sess,
@@ -298,7 +298,7 @@ impl TcpOutboundHandler for Handler {
                     self.dns_client.clone(),
                     &self.actors[actor_idx],
                 )
-                .await?;
+                .await?.0;
                 TcpOutboundHandler::handle(self.actors[actor_idx].as_ref(), sess, stream).await
             };
             match timeout(time::Duration::from_secs(self.fail_timeout as u64), handle).await {

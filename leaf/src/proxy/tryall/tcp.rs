@@ -34,7 +34,7 @@ impl TcpOutboundHandler for Handler {
                     .await;
                 }
                 let stream =
-                    crate::proxy::connect_tcp_outbound(sess, self.dns_client.clone(), a).await?;
+                    crate::proxy::connect_tcp_outbound(sess, self.dns_client.clone(), a).await?.0;
                 TcpOutboundHandler::handle(a.as_ref(), sess, stream).await
             };
             tasks.push(Box::pin(t));

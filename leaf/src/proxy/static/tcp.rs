@@ -58,7 +58,7 @@ impl TcpOutboundHandler for Handler {
                     self.dns_client.clone(),
                     &self.actors[i],
                 )
-                .await?;
+                .await?.0;
                 TcpOutboundHandler::handle(self.actors[i].as_ref(), sess, stream).await
             }
             Method::RoundRobin => {
@@ -71,7 +71,7 @@ impl TcpOutboundHandler for Handler {
                 };
                 self.next.as_ref().unwrap().store(next, Ordering::Relaxed);
                 let stream =
-                    crate::proxy::connect_tcp_outbound(sess, self.dns_client.clone(), a).await?;
+                    crate::proxy::connect_tcp_outbound(sess, self.dns_client.clone(), a).await?.0;
                 TcpOutboundHandler::handle(a.as_ref(), sess, stream).await
             }
         }

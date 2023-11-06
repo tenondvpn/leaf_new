@@ -77,7 +77,7 @@ async fn test_tcp_outbound(
         ..Default::default()
     };
     let start = tokio::time::Instant::now();
-    let stream = crate::proxy::connect_tcp_outbound(&sess, dns_client, &handler).await?;
+    let stream = crate::proxy::connect_tcp_outbound(&sess, dns_client, &handler).await?.0;
     let mut stream = TcpOutboundHandler::handle(handler.as_ref(), &sess, stream).await?;
     stream.write_all(b"HEAD / HTTP/1.1\r\n\r\n").await?;
     let mut buf = Vec::new();

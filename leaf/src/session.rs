@@ -68,8 +68,7 @@ pub struct Session {
     /// Optional source address which is forwarded via HTTP reverse proxy.
     pub forwarded_source: Option<IpAddr>,
 
-    // proxy_addr
-    pub proxy_addr:Arc<Mutex<Option<(String, u16)>>>,
+    pub proxy_addr:Option<(String, u16)>,
 }
 
 impl Clone for Session {
@@ -83,7 +82,7 @@ impl Clone for Session {
             outbound_tag: self.outbound_tag.clone(),
             stream_id: self.stream_id,
             forwarded_source: self.forwarded_source,
-            proxy_addr:Arc::new(Mutex::new(self.proxy_addr.lock().unwrap().to_owned())),
+            proxy_addr:self.proxy_addr.clone(),
         }
     }
 }
@@ -99,7 +98,7 @@ impl Default for Session {
             outbound_tag: "".to_string(),
             stream_id: None,
             forwarded_source: None,
-            proxy_addr:Arc::new(Mutex::new(None)) ,
+            proxy_addr:None ,
         }
     }
 }

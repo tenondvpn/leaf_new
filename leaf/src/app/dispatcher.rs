@@ -164,9 +164,13 @@ impl Dispatcher {
         };
 
         let handshake_start = tokio::time::Instant::now();
+        let con = crate::proxy::connect_tcp_outbound(&sess, self.dns_client.clone(), &h).await;
         let stream =
-            match crate::proxy::connect_tcp_outbound(&sess, self.dns_client.clone(), &h).await {
-                Ok(s) => s,
+            match con {
+                Ok((a, b)) => {
+                    sess.proxy_addr = b;
+                    a
+                },
                 Err(e) => {
                     debug!(
                         "dispatch tcp {} -> {} to [{}] failed: {}",
@@ -179,6 +183,7 @@ impl Dispatcher {
                     return;
                 }
             };
+
         match TcpOutboundHandler::handle(h.as_ref(), &sess, stream).await {
             Ok(mut rhs) => {
                 let elapsed = tokio::time::Instant::now().duration_since(handshake_start);

@@ -362,32 +362,21 @@ pub async fn connect_tcp_outbound(
     sess: &Session,
     dns_client: SyncDnsClient,
     handler: &AnyOutboundHandler,
-) -> io::Result<Option<AnyStream>> {
+) -> io::Result<(Option<AnyStream>, Option<(String,u16)>)> {
     match TcpOutboundHandler::connect_addr(handler.as_ref()) {
         Some(OutboundConnect::Proxy(addr, port)) => {
-            {
-                debug!("starting repleacement");
-                let mut proxy_addr = sess.proxy_addr.lock()
-                    .map_err(|e| {
-                        push_error();
-                        error!("初始化 sessiion 失败：{:?}", e);
-                    })
-                    .unwrap();
-                proxy_addr.replace((addr.to_owned(), port)).unwrap();
-                debug!("starting endrepleace");
 
-            }
-            Ok(Some(new_tcp_stream(dns_client, &addr, &port).await?))
+            Ok((Some((new_tcp_stream(dns_client, &addr, &port).await?)), Some((addr.to_string(), port))))
         }
-        Some(OutboundConnect::Direct) => Ok(Some(
+        Some(OutboundConnect::Direct) => Ok((Some(
             new_tcp_stream(
                 dns_client,
                 &sess.destination.host(),
                 &sess.destination.port(),
             )
-            .await?,
-        )),
-        Some(OutboundConnect::NoConnect) | None => Ok(None),
+            .await?)
+        , None)),
+        Some(OutboundConnect::NoConnect) | None => Ok((None, None)),
     }
 }
 

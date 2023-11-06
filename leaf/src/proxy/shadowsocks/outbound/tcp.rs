@@ -70,8 +70,8 @@ impl TcpOutboundHandler for Handler {
         let mut addr = "".to_owned();
         let mut port = 0u16;
         {
-            let proxy_addr = sess.proxy_addr.lock().unwrap();
-            (addr, port) = proxy_addr.clone()
+
+            (addr, port) = sess.proxy_addr.clone()
                 .ok_or_else(|| {
                     let msg = format!("Proxy address is invalid");
                     push_error();
