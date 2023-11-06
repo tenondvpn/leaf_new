@@ -86,7 +86,10 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
     let res = client.post(url)
         .json(&global_config)
         .send()
-        .await.map_err(|err|  push_error()).unwrap();
+        .await.map_err(|error| {
+        error!("serde_json::from_str(PasswordResponse) error,{}", error);
+        push_error();
+    }).unwrap();
     trace!("exchange_password_by_http 2: send proxy server succeeded");
     let res =res.text().await.unwrap();
     trace!("exchange_password_by_http2: response:{}", &res);
