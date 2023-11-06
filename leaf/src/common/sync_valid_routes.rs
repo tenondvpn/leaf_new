@@ -329,13 +329,17 @@ pub fn wait_for_not_empty_password_map() {
 }
 
 pub fn get_random_password_from_map() -> Option<ProxyNode> {
-    let map =  password_map.read().expect("Failed to acquire read lock for password_map");
+    let map =  password_map.read().map_err(|e| {
+        push_error();
+        error!("password_map.read() failed: {}", e);
+    }).expect("Failed to acquire read lock for password_map");
     let mut rng = thread_rng();
     let random_index = rng.gen_range(0..map.len());
 
     if let Some(node) = map.values().nth(random_index) {
         Some(node.clone())
     } else {
+        error!("map is empty: {:?}", map);
         None
     }
 }
