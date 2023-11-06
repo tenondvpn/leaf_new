@@ -290,7 +290,7 @@ mod tests {
         let text1  = plain_from_server();
         let text2 = String::from(&text1);
         println!("text1 == text2, {}", &text1.eq(&text2));
-        let signature1 = sig_SM2(&text1.as_bytes(), enckey.as_slice(), pk.as_slice());
+        let signature1 = sig_SM2(plain_from_server().as_bytes(), enckey.as_slice(), pk.as_slice());
         let signature2 = sig_SM2(&text2.as_bytes(), enckey.as_slice(), pk.as_slice());
 
         println!("signature1: {}", hex::encode(&signature1));

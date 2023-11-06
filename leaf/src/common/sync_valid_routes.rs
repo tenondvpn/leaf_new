@@ -55,7 +55,7 @@ lazy_static! {
 }
 
 pub async fn wait_for_password_notification() {
-    timeout(Duration::from_secs(2), async move{
+    timeout(Duration::from_secs(10), async move{
         password_not_empty_notify.notified().await;
         trace!("password_notification_ed");
     } )
@@ -336,7 +336,7 @@ mod tests {
     use log::debug;
     use protobuf::Message;
     use third::zj_gm::sm::asymmetric_decrypt_SM2;
-    use crate::common::sync_valid_routes::{build_global_conf, exchange_password_by_http};
+    use crate::common::sync_valid_routes::{build_global_conf, exchange_enc_password, exchange_password_by_http};
     use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
     use crate::proto::server_config::{EncMethodEnum, PasswordResponse, ResponseStatusEnum, ServerConfig};
 
@@ -380,6 +380,12 @@ mod tests {
 
     #[test]
     pub fn test_node_list() {
+        let json = get_node_list_test_json();
+
+        println!("{}", json);
+    }
+
+    fn get_node_list_test_json() -> String {
         let mut node1 = ProxyNode::new();
         node1.set_server_address("10.101.20.31".to_string());
         node1.set_server_port(19802);
@@ -406,8 +412,7 @@ mod tests {
         client_node.set_user_login_information(loginfo.to_string());
 
         let json = serde_json::to_string_pretty(&client_node).unwrap();
-
-        println!("{}", json);
+        json
     }
 
     fn setup_logger(){
@@ -426,6 +431,14 @@ mod tests {
             .chain(fern::log_file("output.log").unwrap())
             .apply().unwrap();
     }
+
+    #[tokio::test]
+    async fn test_exchange_enc_password() {
+        setup_logger();
+        let string = get_node_list_test_json();
+        exchange_enc_password(string.clone());
+    }
+
 
     #[test]
     fn test_passwod_response() {
