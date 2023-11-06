@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
+use std::thread;
 use std::time::Duration;
 use futures_util::TryFutureExt;
 
@@ -298,6 +299,25 @@ pub fn password_map_get(server_address:&str, server_port:u32) -> Option<ProxyNod
 
 pub fn read_password_map<'a>() -> RwLockReadGuard<'a, HashMap<String, ProxyNode>> {
     password_map.read().expect("Failed to acquire read lock for password_map")
+}
+
+fn is_password_map_empty() -> bool {
+    let map = password_map.read().expect("Failed to acquire read lock for password_map");
+    let bool = map.is_empty();
+    bool
+}
+
+pub fn wait_for_not_empty_password_map() {
+    let mut time = 0;
+    while is_password_map_empty() {
+        thread::sleep_ms(100);
+        time = time + 1;
+        trace!("Waiting for password time :{} * 100ms", &time);
+    }
+    {
+        let map = read_password_map();
+        trace!("read_password_map:{:?}", map);
+    }
 }
 
 pub fn get_random_password_from_map() -> Option<ProxyNode> {
