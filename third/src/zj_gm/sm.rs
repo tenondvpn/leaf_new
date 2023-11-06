@@ -59,6 +59,7 @@ pub fn gcm_decrypt_sm4(
     iv: &[u8],
 ) -> usize {
     let mut result = 1;
+    let key = Box::new(key.to_vec());
     unsafe {
         result = gcm_decrypt(
             input.as_ptr(),
@@ -170,7 +171,12 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
     let mut out_len = out_txt_box.len() as size_t;
     let out_txt_len_box = Box::new(&mut out_len);
     let id = "123".to_string();
+    println!("AAAAAAAAAAAAAAAAAA: , \n pri_key: {:?}, \n pk:{:?}, \n input : {} ", String::from_utf8(sec_key.to_vec()), String::from_utf8(pk.to_vec()), hex::encode(&plain_txt));
     unsafe {
+
+
+
+
         trace!("sec_key.len:{}", sec_key.len());
         match sign(
             plain_txt.as_ptr(),
@@ -294,7 +300,7 @@ mod tests {
         let text2 = String::from(&text1);
         println!("text1 == text2, {}", &text1.eq(&text2));
         let signature1 = sig_SM2(plain_from_server().as_bytes(), enckey.as_slice(), pk.as_slice());
-        let signature2 = sig_SM2(&text2.as_bytes(), enckey.as_slice(), pk.as_slice());
+        let signature2 = sig_SM2((&text2).as_bytes(), enckey.as_slice(), pk.as_slice());
 
         println!("signature1: {}", hex::encode(&signature1));
         println!("signature2: {}", hex::encode(&signature2));
@@ -302,7 +308,32 @@ mod tests {
         let result2 = verify_SM2(&text2.as_bytes(), signature2.as_slice(), pk.as_slice());
         println!("result1: {} , result2: {}", result1, result2);
 
+    }
 
+    #[test]
+    fn test_bug() {
+        let (enckey, pk) = use_const_pk();
+        let text1 = "30820436022100f1733f059918ae3ac74aadbbcbfd17d249b88a4456553d7fd3c5107bd2662e16022046df1757a418c0acf9516a50a7ee1b9dfedafd3416379706589b0d4d4523dcb9042056b248a24aaa8c83d99637eeb6ae8ad09935e70e112c053a4f530ebe1a7ea786048203cb4d5224ab61614af89d2a0f6b933e77ace154e4127bad9724c4ca1e8ed847bab5ed226cf56359604a07dc9a84580ca563714652dfde22dded22e2042e43f707a1a9ac9ce42d190dd74d32b8285a9ac1ad4f58f6dc84d5fd49de395e58109c181872b3394fe78702bd7f033f80b0da2617d4620e7e129d07b42210452997694a490b43e5664fdf00b6c17336d0a266cfbaa82b5ce7d60db0c172d402df2d60712473ac32a5bd17a7b14ef1af39f0164577149b41075e338489ad091aedcf977f046c5b8430c15fa170db4f49214a160b0504f066fb5373278d1a5dcee62c9a607ad2365407f5de881e3b3bc2fc3e424bfa0d2bbb955295828a24e8aa5cc6735528c12d135bbb20647b2a78e19eaf77b0feed6592c73d10f64a3a9a7ccde5c6d2be6110a4770472c11754464283e99543af200d75757e78f8d8d9cb6f3e7a68053e9533b8a67d48bf41594fe004cab9064757c0cd4cdf789a0e029ce48c18b450a383ade404c3ddb199d29cb39785cb78f7c1a044b6f34ce37fb4bb0b4bfb47928276e74d1581b540b03b859a3b6c67ac6de1ee1b60062d19ee9125d03111d3609b7f169817b8007e4aa1d719c562468e8970710f1e83399476ac039fa4ae9c3f7c7746e6f68a4dc6aa261edc38c6f0a4c4607769c79bbbd7c007cbc2a2e710281ed486010bbf401dc65b6ac79e9c1a7237a504034869ecdc8fb40eb8b33ae63d20a48d08c5d8d828cbe07b71a8f3eb4598f4821d303f85de35771965cdb2c7c79782a4350964026db6fe531f21c4ef676c10ac8d66f70f185be179f46382856b95826f2a34cab946322dbaf175bd7230bc4d24f6a0c62673088ef10d7a320fd93676f174717b0644e383444c4aa3f6d6ed441c44f0b574831569663389d531ee10311997c10e4d3e33696874554c9fcf43ff302c6ccd4eca5048ae2751780839c67e70c57f72422ef1a63956046caaaceec9a5fdd6da3d705034ba530c2eb57f5ce37558421277d2a610173153edd677cd899561bd8c99a68a123f4065fe873778ab181900cf8b336c378ca1d7172547cebd0d8acb925fbbb1687748e10f00678a0830ce9754facbfe08b70700a6d0882966a0052edce57903972ddb41f4e9f91261f1316c3d977bc3c35f9b716cce9b0b8ab2d94c2963e18e40eedb9d0c290af94b6439b6aab696c588763a33a4afa8c8caaf18d742a980049cd6da2d82eaa33da3b32081561e167b2e63af7590ab3b03cbfba027075eac2ed4a769594f4ec6589cd9eaae45fe031976134255311a73eef6aba255970b6ea9a628d50c6405c6d39bc1381207fe5b3bb3b12cea05a1a524c50915c186894ad1eb75128fb654f1fa696ee0e1f88093b275662c".to_string();
+        //
+        // let text2 = String::from(&text1);
+        // println!("text1 == text2, {}", &text1.eq(&text2));
+        // let signature1 = sig_SM2(plain_from_server().as_bytes(), enckey.as_slice(), pk.as_slice());
+
+        let signature2 = sig_SM2(text1.as_bytes(), enckey.as_slice(), pk.as_slice());
+
+        let string1 = plain_from_server();
+        let signature1 = sig_SM2(string1.as_bytes(), enckey.as_slice(), pk.as_slice());
+
+
+
+
+        // let signature2 = sig_SM2(text1.as_bytes(), enckey.as_slice(), pk.as_slice());
+
+        println!("signature1: {}", hex::encode(&signature1));
+        // println!("signature2: {}", hex::encode(&signature2));
+        // let result1 = verify_SM2(&text1.as_bytes(), signature1.as_slice(), pk.as_slice());
+        // let result2 = verify_SM2(&text2.as_bytes(), signature2.as_slice(), pk.as_slice());
+        // println!("result1: {} , result2: {}", result1, result2);
     }
 
     #[test]
@@ -320,6 +351,19 @@ mod tests {
 
         assert_eq!(plaintext, String::from_utf8(outPlaintext2).unwrap())
     }
+
+    #[test]
+    fn test_asymmetric_encrypt_SM2_only() {
+
+        let sec = "39303131313863323165646338636638663735383265666663303265623036316134326537303235306633383838353465633532343665626564363031616265";
+        let sec = hex::decode(sec).unwrap();
+        let output = "3081d5022100bceb067f3c9880eaa28fb5e05dba6b2cfe7b616e7403b073ea15b336175ab58e02210092929c0c1fd38d8697082087d3d05599abbb0357d75974abab987491caa3b82b042084ab41fd3282b39c8118ad746446cd5f4e929a181afd4eaceb662095470a3bbc046b0e0a9d2866cd813e8715e5cf44b176c89d318de3571ce6e4fe64215011382817d71ce334d59bf910abcc9e0d7d4bd0b7d6dc72a1a7493235270ff752f209dc55a9d221c3ba95ca48df89312a4d91fbd525c97274495be2da5aeae6aeed88f9dd7977a9ca4901df6645c30f";
+        let output = hex::decode(output).unwrap();
+        let outPlaintext2 = asymmetric_decrypt_SM2(output.as_slice(), sec.as_slice()).unwrap();
+        println!("outPlaintext2:{}", hex::encode(&outPlaintext2));
+
+    }
+
 
 
 
@@ -374,6 +418,21 @@ mod tests {
         let enckey = hex::decode("33393435323038463742323134344231334633364533384143364433394639353838393339333639323836304235314134324642383145463444463743354238".as_bytes()).unwrap().to_owned();
         let pk = hex::decode("30343039463944463331314535343231413135304444374431363145344243354336373231373946414431383333464330373642423038464633353646333530323043434541343930434532363737354135324443364541373138434331414136303041454430354642463335453038344136363332463630373244413941443133".as_bytes()).unwrap().to_owned();
         (enckey, pk)
+    }
+    #[test]
+    fn test_1()  {
+        // let enckey = "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8"
+        //     .as_bytes().to_vec();
+        // let pk = "0409F9DF311E5421A150DD7D161E4BC5C672179FAD1833FC076BB08FF356F35020CCEA490CE26775A52DC6EA718CC1AA600AED05FBF35E084A6632F6072DA9AD13"
+        //     .as_bytes().to_vec();
+
+        let enckey = hex::decode("33393435323038463742323134344231334633364533384143364433394639353838393339333639323836304235314134324642383145463444463743354238".as_bytes()).unwrap().to_owned();
+        let pk = hex::decode("30343039463944463331314535343231413135304444374431363145344243354336373231373946414431383333464330373642423038464633353646333530323043434541343930434532363737354135324443364541373138434331414136303041454430354642463335453038344136363332463630373244413941443133".as_bytes()).unwrap().to_owned();
+        println!("enckey: {:?}", String::from_utf8(enckey));
+        println!("pk: {:?}", String::from_utf8(pk));
+
+
+        // (enckey, pk)
     }
 
     #[test]
