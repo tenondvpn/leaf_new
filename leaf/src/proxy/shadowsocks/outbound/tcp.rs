@@ -53,6 +53,7 @@ impl TcpOutboundHandler for Handler {
              }
              Some(a) => {(a.get_server_address().to_string(), a.get_server_port().clone())}
          };
+        debug!("Proxy address is address: {}:{}", &addr,&port);
 
         Some(OutboundConnect::Proxy(addr, port as u16))
     }
