@@ -127,7 +127,7 @@ pub fn asymmetric_encrypt_SM2(plain_txt: &[u8], pk: &[u8]) -> Result<Vec<u8>, St
             }
             i => {
                 let msg = format!("Error: symmetric encryption failed :{}", i);
-                error!("Error: symmetric encryption failed :{}", i);
+                error!("Error:  asymmetric_encrypt_SM2 failed :{}, \n pk:{}, \n input : {} ", i, hex::encode(&pk), hex::encode(&plain_txt));
                 Err(msg)
             }
         }
@@ -158,7 +158,8 @@ pub fn asymmetric_decrypt_SM2(input: &[u8], private_key: &[u8]) -> Result<Vec<u8
             },
             i => {
                 let msg = format!("Error: symmetric decrypt failed :{}", i);
-                error!("Error: symmetric decrypt failed :{}", i);
+                error!("Error: symmetric decrypt failed :{}, \n pri_key: {}, \n input : {} ", i, hex::encode(&private_key), hex::encode(&input));
+
                 Err(msg)
             }
         }
@@ -186,7 +187,8 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
         ) {
             0 => {}
             i => {
-                error!("Error: symmetric sig_SM2 failed :{}", i);
+                error!("Error:  sig_SM2 failed :{}, \n pri_key: {}, \n pk:{}, \n input : {} ", i, hex::encode(&sec_key), hex::encode(&pk), hex::encode(&plain_txt));
+
             }
         };
     }
