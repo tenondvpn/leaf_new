@@ -53,6 +53,7 @@ pub fn check_special_tag_in_stream(buf: &mut BytesMut) -> bool {
     match get_rout_data_from_buf(buf) {
         Ok(Some(data)) => {
             let msg = format!("consume_rout_data_from_buf aaaa response_data {:?}", data);
+            error!{"{msg}"};
             push_error();
             panic!("{msg}");
         }
@@ -105,7 +106,9 @@ fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<PasswordRespo
     let rout_byte_data = &buf[ROUT_HEADER_LEN..ROUT_HEADER_LEN + length as usize];
     // let rout_string_value = String::from_utf8_lossy(rout_byte_data).to_string();
 
-    let route_pb = PasswordResponse::parse_from_bytes(rout_byte_data).expect("parse rout protobuf error");
+    let route_pb = PasswordResponse::parse_from_bytes(rout_byte_data).map_err(|e| {
+        error!("Error parsing {e}")
+    }).expect("parse rout protobuf error");
 
     return Ok(Some(route_pb));
 }
