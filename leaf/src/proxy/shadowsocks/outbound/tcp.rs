@@ -89,7 +89,7 @@ impl TcpOutboundHandler for Handler {
         };
 
         let enc_type = proxy_node.get_symmetric_crypto_info().get_enc_method_type().clone();
-        let need_enc = enc_type == EncMethodEnum::NO_ENC;
+        let need_enc = enc_type != EncMethodEnum::NO_ENC;
         let mut global_config = GlobalConfig::default();
         global_config.set_current_message_encrypted(need_enc);
         global_config.set_symmetric_cryptograph_type(enc_type);

@@ -15,6 +15,7 @@ use crate::common::crypto::{
     aead::{AeadCipher, AeadDecryptor, AeadEncryptor},
     Cipher, Decryptor, Encryptor, SizedCipher,
 };
+use crate::common::error_queue::push_error;
 use crate::proxy::shadowsocks::ss_router::check_special_tag_in_stream;
 
 use super::crypto::{hkdf_sha1, kdf, ShadowsocksNonceSequence};
@@ -49,12 +50,16 @@ pub struct ShadowedStream<T> {
 impl<T> ShadowedStream<T> {
     pub fn new(s: T, cipher: &str, password: &[u8]) -> io::Result<Self> {
         let cipher = AeadCipher::new(cipher).map_err(|e| {
+            error!("create AEAD cipher failed: {}", &e);
+            push_error();
             io::Error::new(
                 io::ErrorKind::Other,
                 format!("create AEAD cipher failed: {}", e),
             )
         })?;
         let psk = kdf(password, cipher.key_len()).map_err(|e| {
+            error!("derive key failed: {}", &e);
+            push_error();
             io::Error::new(io::ErrorKind::Other, format!("derive key failed: {}", e))
         })?;
         Ok(ShadowedStream {
@@ -270,6 +275,7 @@ where
                     } else {
                         self.write_state = WriteState::PendingSalt(total, written + nw);
                     }
+                    trace!("write slate successful");
                 }
                 WriteState::WaitingChunk => {
                     let me = &mut *self;
