@@ -1,6 +1,5 @@
 extern crate rand;
 
-use core::slice::SlicePattern;
 use std::error::Error;
 use std::io;
 
@@ -106,7 +105,7 @@ impl TcpOutboundHandler for Handler {
 
             (global_config, password.to_vec())
         }   else {
-            (global_config, [0u8;0].as_slice())
+            (global_config, [0u8;0].to_vec())
         };
 
         let pb = &global_config.write_to_bytes().unwrap();
