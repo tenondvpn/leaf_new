@@ -426,7 +426,7 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
     // 等待交换密钥完成
     trace!("等待交换密钥完成");
 
-    common::sync_valid_routes::wait_for_not_empty_password_map();
+    // common::sync_valid_routes::wait_for_not_empty_password_map();
     rt.block_on(common::sync_valid_routes::wait_for_password_notification());
     {
         let map = read_password_map();

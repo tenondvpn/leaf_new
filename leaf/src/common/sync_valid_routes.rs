@@ -76,7 +76,7 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
     trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config).unwrap());
 
     let client = reqwest::Client::new();
-    let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), proxy_node.get_server_port());
+    let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), 19802);
 
 
     // let mock_server_hex = "3082013602200ba27589b1851c1921e960510217b5f96841ca9acfe31c89f6110e9063465c2f022100877547fb71ad6890819ca43a6dce6190c95ba2e91262644a47dd7d112a8d226f04206668dabd009021becbe5518750e49c9964454eaa89d3f3f6ca822160b15f690e0481cc0ae0a03e57902125c3d603e297b07d7034a7485a6e0971f33c390e69948dd75cb2f4154d5829e26c7eee955d8bda7b4c9f83599cec323c523c7cae11fc447ad21a886befb08da03f93d79d93c7e787c9ed5d9bf58745db3d12ed8ec1568beeb53879c36a7f6454627ca7a076146a18c2eb8395e9b15b5e57dd61ddf78eceaec9b9ef16a57cf864ae390adb0825ea3dd9ee32e6a247af67db336552ab294a9b1cefe74b7a40995c09fc2b9a9c9b9baeff1b348132e74245e9034799d5db549443b087109411238dc6b24e0de5";
@@ -367,12 +367,17 @@ fn use_test_client_key() -> (Vec<u8>, Vec<u8>) {
 
 #[cfg(test)]
 mod tests {
+    use std::net::SocketAddr;
+    use bytes::{BufMut, BytesMut};
     use log::debug;
     use protobuf::Message;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::{TcpListener, TcpSocket, TcpStream};
     use third::zj_gm::sm::asymmetric_decrypt_SM2;
     use crate::common::sync_valid_routes::{build_global_conf, exchange_enc_password, exchange_password_by_http, wait_for_not_empty_password_map, wait_for_password_notification};
     use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
-    use crate::proto::server_config::{EncMethodEnum, PasswordResponse, ResponseStatusEnum, ServerConfig};
+    use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, ResponseStatusEnum, ServerConfig};
+    use crate::proto::server_config::EncMethodEnum::SM4_GCM;
 
     #[tokio::test]
     pub async fn test_build_global_config() {
@@ -494,6 +499,74 @@ mod tests {
         println!("deserialized = {:?}", deserialized);
     }
 
+    #[tokio::test]
+   async fn test_tcp()  {
+
+        // let handle1 =tokio::spawn(async { tcp_server_demo().await; });
+        let handle = tokio::spawn(async { tcp_send_demo().await; });
+        // handle1.await.unwrap();
+        //
+        handle.await.unwrap();
 
 
+
+
+    }
+
+    async fn tcp_server_demo() {
+        let listener = TcpListener::bind("127.0.0.1:8881").await.unwrap();
+        match listener.accept().await {
+            Ok((mut socket, addr)) => {
+                println!("Connection received! {:?} is sending data.", addr);
+                let mut buffer = BytesMut::with_capacity(100);
+                socket.read_buf(&mut buffer).await.unwrap();
+                println!("received data: {:?}",hex::encode( &buffer[..]));
+                socket.write_all("1234".as_bytes()).await.unwrap();
+            },
+            Err(e) => println!("couldn't get client: {:?}", e),
+        }
+    }
+
+
+
+    async fn tcp_send_demo() {
+        let server_address = "10.101.20.31:19801"; // 修改为你要测试的服务器地址和端口
+        let mut stream = TcpStream::connect(server_address).await.unwrap();
+
+        let mut global_config = GlobalConfig::default();
+        global_config.set_current_message_encrypted(true);
+        global_config.set_symmetric_cryptograph_type(SM4_GCM);
+
+        global_config.set_client_unique_id(15720307825053696);
+        let password =
+            hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e").unwrap();
+
+        let pb = &global_config.write_to_bytes().unwrap();
+        let mut buffer = BytesMut::new();
+        buffer.put_u16(pb.len() as u16);
+        buffer.put_slice(pb.as_slice());
+        println!("send fist global_config :{:?}, pb.len:{:?}, pb.hex:{:?}", &global_config, pb.len(), hex::encode(pb.as_slice()));
+        match stream.write_all(&buffer).await
+        {
+            Ok(a) => { println!("send successfully") }
+            Err(e) => { println!("send error ：{:?}", e); }
+        }; // 注意这里是明文
+
+
+        let mut buffer = [0; 1024];
+        let mut response = String::new();
+
+        loop {
+            match stream.read(&mut buffer).await {
+                Ok(bytes_received) => {
+                    if bytes_received == 0 {
+                        break;
+                    }
+                    let chunk = hex::encode(&buffer[..bytes_received]);
+                    println!("recive {:?}", chunk);
+                }
+                Err(e) => { println!("error: {:?}", e); }
+            }
+        }
+    }
 }
