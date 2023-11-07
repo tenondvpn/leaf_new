@@ -463,33 +463,26 @@ mod tests {
     #[test]
     fn test_sm4_dec() {
 
-        let key = String::from("981b9ac039b9a061fcd164af3854fba0");
-        let iv = String::from("1234567890123456");
-        let mut tag = String::from("6571756573740d0a4163636570742d52");
-        let mut dec_txt = String::from("xxxxx ixxx");
-        let mut out_txt = String::from("1lain text");
-        let out_txt_len = out_txt.len();
-        let tag_len = tag.len();
-        let dec_txt_len = dec_txt.len();
+        let data = hex::decode("2052").unwrap();
+        let tag = hex::decode("6571756573740d0a4163636570742d52").unwrap();
+        let key = hex::decode("981b9ac039b9a061fcd164af3854fba0").unwrap();
+        let nonce = hex::decode("00000000000000000000000000000000").unwrap();
+        let mut out_vec = hex::decode("1111111111111111111111111111111111111111111111111111111111111111").unwrap();
 
-        unsafe{
-            gcm_decrypt(
-                out_txt.as_ptr(),
-                out_txt_len as size_t,
-                dec_txt.as_mut_ptr(),
-                Box::new(dec_txt_len as size_t).as_mut(),
-                tag.as_mut_ptr(),
-                tag_len as size_t,
-                key.as_ptr(),
-                16 as size_t,
-                iv.as_ptr(),
-                iv.len() as size_t,
-                iv.as_ptr(),
-                0,
-                padding_t_NO_PADDING,
-                symmetric_cryptograph_t_SM4,
-            );
-        }
+        match gcm_decrypt_sm4(
+            data.as_slice(),
+            out_vec.as_mut_slice(),
+            tag.as_slice(),
+            &key.as_slice(),
+            nonce.as_slice(),
+        ) {
+            0 => {}
+            other => {
+                println!("key_len:{}, iv_len:{}, tag_size:{}", &key.len(), &nonce.len(), &tag.len());
+                println!("gcm_decrypt_sm4 decryption failed code: {}", other);
+            }
+        };
+        println!("dec out_vec:{:?}", hex::encode(&out_vec));
 
     }
 
