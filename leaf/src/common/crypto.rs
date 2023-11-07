@@ -297,6 +297,7 @@ pub mod aead {
                 trace!("dec data:{:?}", hex::encode(data));
                 trace!("dec tag:{:?}", hex::encode(tag));
                 trace!("key:{:?}", hex::encode(&self.key.as_slice()));
+                trace!("nonce:{:?}", hex::encode(&nonce.as_slice()));
 
 
                 let mut out_vec = vec![1u8; data.len()];
