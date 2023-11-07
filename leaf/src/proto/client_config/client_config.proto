@@ -41,7 +41,10 @@ message ErrorRustMessage {
   optional string error_msg=2; // msg 一般用来打印堆栈。
 }
 enum ErrorType {
-  change_password_timeout = 1; // 与服务端交换密钥超时
+  change_password_error = 1; // 交换密钥失败
+  crypto_error = 2; // 加解密失败
+  server_error = 3; // 服务端主动断开
+  rust_error = 4; // rust 代码异常
 }
 
 enum RustMessageType {

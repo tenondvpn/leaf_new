@@ -95,9 +95,9 @@ impl TcpOutboundHandler for Handler {
         global_config.set_symmetric_cryptograph_type(enc_type);
 
         global_config.set_client_unique_id(15720307825053696);
-        let password =
-            hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e")
-                .unwrap();
+        let password ="e5879349331f472e5344363aecf65b98cdea812e4be1ea1b5d69dd1ef4006358";
+            // hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e")
+            //     .unwrap();
         // let (global_config, password)  = if need_enc {
         //     let symmetric_crypto_info = proxy_node.get_symmetric_crypto_info();
         //     let uid = symmetric_crypto_info.get_client_unique_id();
@@ -117,19 +117,20 @@ impl TcpOutboundHandler for Handler {
         src_stream.write_all(&buffer).await?; // 注意这里是明文
 
 
-
         let mut buf = BytesMut::new();
         sess.destination
             .write_buf(&mut buf, SocksAddrWireType::PortLast);
 
-      if need_enc {
-            let mut stream = ShadowedStream::new(src_stream, &self.cipher, password.as_slice())?;
+        // trace!("sm4 sec :{}, uid:{}", hex::encode(&password.as_slice()).as_str(), &global_config.get_client_unique_id());
+
+        if need_enc {
+            let mut stream = ShadowedStream::new(src_stream, &self.cipher, password.as_bytes())?;
             stream.write_all(&buf).await?;
-           Ok(Box::new(stream))
-       } else {
-           src_stream.write_all(&buf).await?;
-          Ok(src_stream)
-       }
+            Ok(Box::new(stream))
+        } else {
+            src_stream.write_all(&buf).await?;
+            Ok(src_stream)
+        }
     }
 }
 

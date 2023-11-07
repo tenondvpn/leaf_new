@@ -502,10 +502,10 @@ mod tests {
     #[tokio::test]
    async fn test_tcp()  {
 
-        // let handle1 =tokio::spawn(async { tcp_server_demo().await; });
+        let handle1 =tokio::spawn(async { tcp_server_demo().await; });
         let handle = tokio::spawn(async { tcp_send_demo().await; });
-        // handle1.await.unwrap();
-        //
+        handle1.await.unwrap();
+
         handle.await.unwrap();
 
 
@@ -514,7 +514,7 @@ mod tests {
     }
 
     async fn tcp_server_demo() {
-        let listener = TcpListener::bind("127.0.0.1:8881").await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:8882").await.unwrap();
         match listener.accept().await {
             Ok((mut socket, addr)) => {
                 println!("Connection received! {:?} is sending data.", addr);
@@ -530,7 +530,7 @@ mod tests {
 
 
     async fn tcp_send_demo() {
-        let server_address = "10.101.20.31:19801"; // 修改为你要测试的服务器地址和端口
+        let server_address = "127.0.0.1:8882"; // 修改为你要测试的服务器地址和端口
         let mut stream = TcpStream::connect(server_address).await.unwrap();
 
         let mut global_config = GlobalConfig::default();

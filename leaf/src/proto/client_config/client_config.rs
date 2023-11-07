@@ -1066,7 +1066,7 @@ pub struct RustMessage {
     // message fields
     pub timestamp: ::std::option::Option<u64>,
     pub message_type: ::protobuf::SingularPtrField<RustMessage>,
-    pub protobuf_bytes: ::protobuf::SingularField<::std::vec::Vec<u8>>,
+    pub data: ::protobuf::SingularField<::std::string::String>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1137,40 +1137,40 @@ impl RustMessage {
         self.message_type.take().unwrap_or_else(|| RustMessage::new())
     }
 
-    // optional bytes protobuf_bytes = 3;
+    // optional string data = 3;
 
 
-    pub fn get_protobuf_bytes(&self) -> &[u8] {
-        match self.protobuf_bytes.as_ref() {
+    pub fn get_data(&self) -> &str {
+        match self.data.as_ref() {
             Some(v) => &v,
-            None => &[],
+            None => "",
         }
     }
-    pub fn clear_protobuf_bytes(&mut self) {
-        self.protobuf_bytes.clear();
+    pub fn clear_data(&mut self) {
+        self.data.clear();
     }
 
-    pub fn has_protobuf_bytes(&self) -> bool {
-        self.protobuf_bytes.is_some()
+    pub fn has_data(&self) -> bool {
+        self.data.is_some()
     }
 
     // Param is passed by value, moved
-    pub fn set_protobuf_bytes(&mut self, v: ::std::vec::Vec<u8>) {
-        self.protobuf_bytes = ::protobuf::SingularField::some(v);
+    pub fn set_data(&mut self, v: ::std::string::String) {
+        self.data = ::protobuf::SingularField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_protobuf_bytes(&mut self) -> &mut ::std::vec::Vec<u8> {
-        if self.protobuf_bytes.is_none() {
-            self.protobuf_bytes.set_default();
+    pub fn mut_data(&mut self) -> &mut ::std::string::String {
+        if self.data.is_none() {
+            self.data.set_default();
         }
-        self.protobuf_bytes.as_mut().unwrap()
+        self.data.as_mut().unwrap()
     }
 
     // Take field
-    pub fn take_protobuf_bytes(&mut self) -> ::std::vec::Vec<u8> {
-        self.protobuf_bytes.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    pub fn take_data(&mut self) -> ::std::string::String {
+        self.data.take().unwrap_or_else(|| ::std::string::String::new())
     }
 }
 
@@ -1199,7 +1199,7 @@ impl ::protobuf::Message for RustMessage {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.message_type)?;
                 },
                 3 => {
-                    ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.protobuf_bytes)?;
+                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.data)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1220,8 +1220,8 @@ impl ::protobuf::Message for RustMessage {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
-        if let Some(ref v) = self.protobuf_bytes.as_ref() {
-            my_size += ::protobuf::rt::bytes_size(3, &v);
+        if let Some(ref v) = self.data.as_ref() {
+            my_size += ::protobuf::rt::string_size(3, &v);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -1237,8 +1237,8 @@ impl ::protobuf::Message for RustMessage {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
-        if let Some(ref v) = self.protobuf_bytes.as_ref() {
-            os.write_bytes(3, &v)?;
+        if let Some(ref v) = self.data.as_ref() {
+            os.write_string(3, &v)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1284,7 +1284,7 @@ impl ::protobuf::Clear for RustMessage {
     fn clear(&mut self) {
         self.timestamp = ::std::option::Option::None;
         self.message_type.clear();
-        self.protobuf_bytes.clear();
+        self.data.clear();
         self.unknown_fields.clear();
     }
 }
@@ -1300,7 +1300,7 @@ impl ::protobuf::reflect::ProtobufValue for RustMessage {
 pub struct ErrorRustMessage {
     // message fields
     pub error_type: ::std::option::Option<ErrorType>,
-    pub msg: ::protobuf::SingularField<::std::string::String>,
+    pub error_msg: ::protobuf::SingularField<::std::string::String>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1323,7 +1323,7 @@ impl ErrorRustMessage {
 
 
     pub fn get_error_type(&self) -> ErrorType {
-        self.error_type.unwrap_or(ErrorType::change_password_timeout)
+        self.error_type.unwrap_or(ErrorType::change_password_error)
     }
     pub fn clear_error_type(&mut self) {
         self.error_type = ::std::option::Option::None;
@@ -1338,40 +1338,40 @@ impl ErrorRustMessage {
         self.error_type = ::std::option::Option::Some(v);
     }
 
-    // optional string msg = 2;
+    // optional string error_msg = 2;
 
 
-    pub fn get_msg(&self) -> &str {
-        match self.msg.as_ref() {
+    pub fn get_error_msg(&self) -> &str {
+        match self.error_msg.as_ref() {
             Some(v) => &v,
             None => "",
         }
     }
-    pub fn clear_msg(&mut self) {
-        self.msg.clear();
+    pub fn clear_error_msg(&mut self) {
+        self.error_msg.clear();
     }
 
-    pub fn has_msg(&self) -> bool {
-        self.msg.is_some()
+    pub fn has_error_msg(&self) -> bool {
+        self.error_msg.is_some()
     }
 
     // Param is passed by value, moved
-    pub fn set_msg(&mut self, v: ::std::string::String) {
-        self.msg = ::protobuf::SingularField::some(v);
+    pub fn set_error_msg(&mut self, v: ::std::string::String) {
+        self.error_msg = ::protobuf::SingularField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_msg(&mut self) -> &mut ::std::string::String {
-        if self.msg.is_none() {
-            self.msg.set_default();
+    pub fn mut_error_msg(&mut self) -> &mut ::std::string::String {
+        if self.error_msg.is_none() {
+            self.error_msg.set_default();
         }
-        self.msg.as_mut().unwrap()
+        self.error_msg.as_mut().unwrap()
     }
 
     // Take field
-    pub fn take_msg(&mut self) -> ::std::string::String {
-        self.msg.take().unwrap_or_else(|| ::std::string::String::new())
+    pub fn take_error_msg(&mut self) -> ::std::string::String {
+        self.error_msg.take().unwrap_or_else(|| ::std::string::String::new())
     }
 }
 
@@ -1388,7 +1388,7 @@ impl ::protobuf::Message for ErrorRustMessage {
                     ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.error_type, 1, &mut self.unknown_fields)?
                 },
                 2 => {
-                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.msg)?;
+                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.error_msg)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1405,7 +1405,7 @@ impl ::protobuf::Message for ErrorRustMessage {
         if let Some(v) = self.error_type {
             my_size += ::protobuf::rt::enum_size(1, v);
         }
-        if let Some(ref v) = self.msg.as_ref() {
+        if let Some(ref v) = self.error_msg.as_ref() {
             my_size += ::protobuf::rt::string_size(2, &v);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -1417,7 +1417,7 @@ impl ::protobuf::Message for ErrorRustMessage {
         if let Some(v) = self.error_type {
             os.write_enum(1, ::protobuf::ProtobufEnum::value(&v))?;
         }
-        if let Some(ref v) = self.msg.as_ref() {
+        if let Some(ref v) = self.error_msg.as_ref() {
             os.write_string(2, &v)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
@@ -1463,7 +1463,7 @@ impl ::protobuf::Message for ErrorRustMessage {
 impl ::protobuf::Clear for ErrorRustMessage {
     fn clear(&mut self) {
         self.error_type = ::std::option::Option::None;
-        self.msg.clear();
+        self.error_msg.clear();
         self.unknown_fields.clear();
     }
 }
@@ -1477,7 +1477,10 @@ impl ::protobuf::reflect::ProtobufValue for ErrorRustMessage {
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
 #[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub enum ErrorType {
-    change_password_timeout = 1,
+    change_password_error = 1,
+    crypto_error = 2,
+    server_error = 3,
+    rust_error = 4,
 }
 
 impl ::protobuf::ProtobufEnum for ErrorType {
@@ -1487,14 +1490,20 @@ impl ::protobuf::ProtobufEnum for ErrorType {
 
     fn from_i32(value: i32) -> ::std::option::Option<ErrorType> {
         match value {
-            1 => ::std::option::Option::Some(ErrorType::change_password_timeout),
+            1 => ::std::option::Option::Some(ErrorType::change_password_error),
+            2 => ::std::option::Option::Some(ErrorType::crypto_error),
+            3 => ::std::option::Option::Some(ErrorType::server_error),
+            4 => ::std::option::Option::Some(ErrorType::rust_error),
             _ => ::std::option::Option::None
         }
     }
 
     fn values() -> &'static [Self] {
         static values: &'static [ErrorType] = &[
-            ErrorType::change_password_timeout,
+            ErrorType::change_password_error,
+            ErrorType::crypto_error,
+            ErrorType::server_error,
+            ErrorType::rust_error,
         ];
         values
     }
@@ -1506,7 +1515,7 @@ impl ::std::marker::Copy for ErrorType {
 // Note, `Default` is implemented although default value is not 0
 impl ::std::default::Default for ErrorType {
     fn default() -> Self {
-        ErrorType::change_password_timeout
+        ErrorType::change_password_error
     }
 }
 
@@ -1519,7 +1528,7 @@ impl ::protobuf::reflect::ProtobufValue for ErrorType {
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
 #[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub enum RustMessageType {
-    R_ERROR = 1,
+    ERROR_EVENT = 1,
 }
 
 impl ::protobuf::ProtobufEnum for RustMessageType {
@@ -1529,14 +1538,14 @@ impl ::protobuf::ProtobufEnum for RustMessageType {
 
     fn from_i32(value: i32) -> ::std::option::Option<RustMessageType> {
         match value {
-            1 => ::std::option::Option::Some(RustMessageType::R_ERROR),
+            1 => ::std::option::Option::Some(RustMessageType::ERROR_EVENT),
             _ => ::std::option::Option::None
         }
     }
 
     fn values() -> &'static [Self] {
         static values: &'static [RustMessageType] = &[
-            RustMessageType::R_ERROR,
+            RustMessageType::ERROR_EVENT,
         ];
         values
     }
@@ -1548,7 +1557,7 @@ impl ::std::marker::Copy for RustMessageType {
 // Note, `Default` is implemented although default value is not 0
 impl ::std::default::Default for RustMessageType {
     fn default() -> Self {
-        RustMessageType::R_ERROR
+        RustMessageType::ERROR_EVENT
     }
 }
 

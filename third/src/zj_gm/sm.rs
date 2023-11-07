@@ -268,8 +268,9 @@ pub fn test_sm4(plain_txt: &str) -> String {
             1,
             0,
         );
+        let key = String::from("1234567890123456");
 
-        gcm_decrypt(
+        let i = gcm_decrypt(
             out_txt.as_ptr(),
             out_txt_len as size_t,
             dec_txt.as_mut_ptr(),
@@ -279,12 +280,13 @@ pub fn test_sm4(plain_txt: &str) -> String {
             key.as_ptr(),
             16 as size_t,
             iv.as_ptr(),
-            iv.len() as size_t,
+            16,
             iv.as_ptr(),
-            0,
+            1,
             padding_t_NO_PADDING,
             symmetric_cryptograph_t_SM4,
         );
+        println!("result {}", i);
     }
     dec_txt.to_owned()
 }
