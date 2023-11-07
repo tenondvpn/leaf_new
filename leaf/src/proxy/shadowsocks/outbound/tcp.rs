@@ -49,7 +49,7 @@ impl TcpOutboundHandler for Handler {
                  let msg = format!("Proxy address is invalid");
                  push_error();
                  error!("Proxy address is invalid");
-                 panic!("{}", msg);
+                 ("10.101.20.31".to_string(), 19802)
              }
              Some(a) => {(a.get_server_address().to_string(), a.get_server_port().clone())}
          };
