@@ -106,8 +106,8 @@ fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<ClientUIDStat
     let rout_byte_data = &buf[ROUT_HEADER_LEN..ROUT_HEADER_LEN + length as usize];
     // let rout_string_value = String::from_utf8_lossy(rout_byte_data).to_string();
 
-    let route_pb = ClientUIDStatusRes::parse_from_bytes(rout_byte_data).map_err(|e| {
-        error!("Error parsing {e}")
+    let route_pb = ClientUIDStatusRes::parse_from_bytes(&rout_byte_data).map_err(|e| {
+        error!("Error parsing {e},pb.len{} pb:hex:{}", length, hex::encode(&rout_byte_data))
     }).expect("parse rout protobuf error");
 
     return Ok(Some(route_pb));
