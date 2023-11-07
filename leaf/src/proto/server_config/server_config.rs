@@ -1272,7 +1272,7 @@ impl ::protobuf::reflect::ProtobufValue for PasswordResponseData {
 pub struct ClientUIDStatusRes {
     // message fields
     pub client_unique_id: ::std::option::Option<u64>,
-    pub status: ::std::option::Option<UidStatusEnum>,
+    pub status: ::std::option::Option<ClientUIDStatusRes_UidStatusEnum>,
     pub message: ::protobuf::SingularField<::std::string::String>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1311,11 +1311,11 @@ impl ClientUIDStatusRes {
         self.client_unique_id = ::std::option::Option::Some(v);
     }
 
-    // optional .leaf.UidStatusEnum status = 2;
+    // optional .leaf.ClientUIDStatusRes.UidStatusEnum status = 2;
 
 
-    pub fn get_status(&self) -> UidStatusEnum {
-        self.status.unwrap_or(UidStatusEnum::NOT_READY)
+    pub fn get_status(&self) -> ClientUIDStatusRes_UidStatusEnum {
+        self.status.unwrap_or(ClientUIDStatusRes_UidStatusEnum::NOT_READY)
     }
     pub fn clear_status(&mut self) {
         self.status = ::std::option::Option::None;
@@ -1326,7 +1326,7 @@ impl ClientUIDStatusRes {
     }
 
     // Param is passed by value, moved
-    pub fn set_status(&mut self, v: UidStatusEnum) {
+    pub fn set_status(&mut self, v: ClientUIDStatusRes_UidStatusEnum) {
         self.status = ::std::option::Option::Some(v);
     }
 
@@ -1477,6 +1477,57 @@ impl ::protobuf::Clear for ClientUIDStatusRes {
 impl ::protobuf::reflect::ProtobufValue for ClientUIDStatusRes {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
+pub enum ClientUIDStatusRes_UidStatusEnum {
+    NOT_READY = 1,
+    VALID = 2,
+    NOT_VALID = 3,
+    ERROR = 4,
+}
+
+impl ::protobuf::ProtobufEnum for ClientUIDStatusRes_UidStatusEnum {
+    fn value(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> ::std::option::Option<ClientUIDStatusRes_UidStatusEnum> {
+        match value {
+            1 => ::std::option::Option::Some(ClientUIDStatusRes_UidStatusEnum::NOT_READY),
+            2 => ::std::option::Option::Some(ClientUIDStatusRes_UidStatusEnum::VALID),
+            3 => ::std::option::Option::Some(ClientUIDStatusRes_UidStatusEnum::NOT_VALID),
+            4 => ::std::option::Option::Some(ClientUIDStatusRes_UidStatusEnum::ERROR),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    fn values() -> &'static [Self] {
+        static values: &'static [ClientUIDStatusRes_UidStatusEnum] = &[
+            ClientUIDStatusRes_UidStatusEnum::NOT_READY,
+            ClientUIDStatusRes_UidStatusEnum::VALID,
+            ClientUIDStatusRes_UidStatusEnum::NOT_VALID,
+            ClientUIDStatusRes_UidStatusEnum::ERROR,
+        ];
+        values
+    }
+}
+
+impl ::std::marker::Copy for ClientUIDStatusRes_UidStatusEnum {
+}
+
+// Note, `Default` is implemented although default value is not 0
+impl ::std::default::Default for ClientUIDStatusRes_UidStatusEnum {
+    fn default() -> Self {
+        ClientUIDStatusRes_UidStatusEnum::NOT_READY
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for ClientUIDStatusRes_UidStatusEnum {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Enum(::protobuf::ProtobufEnum::descriptor(self))
     }
 }
 
@@ -1778,57 +1829,6 @@ impl ::std::default::Default for ResponseStatusEnum {
 }
 
 impl ::protobuf::reflect::ProtobufValue for ResponseStatusEnum {
-    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
-        ::protobuf::reflect::ReflectValueRef::Enum(::protobuf::ProtobufEnum::descriptor(self))
-    }
-}
-
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
-#[cfg_attr(feature = "with-serde", derive(::serde::Serialize, ::serde::Deserialize))]
-pub enum UidStatusEnum {
-    NOT_READY = 1,
-    VALID = 2,
-    NOT_VALID = 3,
-    ERROR = 4,
-}
-
-impl ::protobuf::ProtobufEnum for UidStatusEnum {
-    fn value(&self) -> i32 {
-        *self as i32
-    }
-
-    fn from_i32(value: i32) -> ::std::option::Option<UidStatusEnum> {
-        match value {
-            1 => ::std::option::Option::Some(UidStatusEnum::NOT_READY),
-            2 => ::std::option::Option::Some(UidStatusEnum::VALID),
-            3 => ::std::option::Option::Some(UidStatusEnum::NOT_VALID),
-            4 => ::std::option::Option::Some(UidStatusEnum::ERROR),
-            _ => ::std::option::Option::None
-        }
-    }
-
-    fn values() -> &'static [Self] {
-        static values: &'static [UidStatusEnum] = &[
-            UidStatusEnum::NOT_READY,
-            UidStatusEnum::VALID,
-            UidStatusEnum::NOT_VALID,
-            UidStatusEnum::ERROR,
-        ];
-        values
-    }
-}
-
-impl ::std::marker::Copy for UidStatusEnum {
-}
-
-// Note, `Default` is implemented although default value is not 0
-impl ::std::default::Default for UidStatusEnum {
-    fn default() -> Self {
-        UidStatusEnum::NOT_READY
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for UidStatusEnum {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Enum(::protobuf::ProtobufEnum::descriptor(self))
     }

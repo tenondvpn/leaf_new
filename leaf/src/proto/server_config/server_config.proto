@@ -57,13 +57,14 @@ message ClientUIDStatusRes {
     optional uint64 client_unique_id = 1;   //明文，客户端唯一标识(uint64)，每次encrypted为0时，服务端自增id(最低位的1个字节区分不同服务器)
     optional UidStatusEnum  status = 2 ;
     optional string message = 3; // 错误信息
+    enum UidStatusEnum {
+        NOT_READY  = 1;
+        VALID = 2;
+        NOT_VALID = 3;
+        ERROR = 4;
+    }
 }
-enum UidStatusEnum {
-    NOT_READY  = 1;
-    VALID = 2;
-    NOT_VALID = 3;
-    ERROR = 4;
-}
+
 
 message Route {
     optional string route = 1;    //pk1:ip1:svr_port1,pk2:ip2:svr_port2   example: 03b9...e8a1:10.101.20.31:19801

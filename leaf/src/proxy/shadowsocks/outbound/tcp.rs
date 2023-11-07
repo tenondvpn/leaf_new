@@ -17,7 +17,7 @@ use url::quirks::password;
 use super::shadow::ShadowedStream;
 use crate::common;
 use crate::proto::server_config::{
-    ClientUIDStatusRes, EncMethodEnum, GlobalConfig, ServerConfig, UidStatusEnum,
+    ClientUIDStatusRes, EncMethodEnum, GlobalConfig, ServerConfig,
 };
 use crate::proxy::shadowsocks::ss_router::{
     generate_routes_hash, get_sec_from_cache, sec_cache_refresh,
