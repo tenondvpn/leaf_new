@@ -8,7 +8,7 @@ use protobuf::Message;
 use tokio::io;
 use crate::common::error_queue::push_error;
 
-use crate::proto::server_config::{PasswordResponse, Route};
+use crate::proto::server_config::{ClientUIDStatusRes, PasswordResponse, Route};
 
 const SYS_ROUT_FLAG: &[u8; 4] = b"aaaa";
 const SYS_ROUT_FLAG_LEN: usize = SYS_ROUT_FLAG.len();
@@ -75,7 +75,7 @@ pub fn get_route_data() -> String {
 }
 
 // 提取 rout 信息 并消费buffer
-fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<PasswordResponse>> {
+fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<ClientUIDStatusRes>> {
     if buf.len() < SYS_ROUT_FLAG_LEN + ROUT_DATA_LEN {
         debug!(
             "consume_rout_data_from_buf Not enough data len {}",
@@ -106,7 +106,7 @@ fn get_rout_data_from_buf(buf: &mut BytesMut) -> io::Result<Option<PasswordRespo
     let rout_byte_data = &buf[ROUT_HEADER_LEN..ROUT_HEADER_LEN + length as usize];
     // let rout_string_value = String::from_utf8_lossy(rout_byte_data).to_string();
 
-    let route_pb = PasswordResponse::parse_from_bytes(rout_byte_data).map_err(|e| {
+    let route_pb = ClientUIDStatusRes::parse_from_bytes(rout_byte_data).map_err(|e| {
         error!("Error parsing {e}")
     }).expect("parse rout protobuf error");
 
