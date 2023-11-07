@@ -222,7 +222,7 @@ pub mod aead {
                 ) {
                     0 => {}
                     other => {
-                        error!("gcm_decrypt_sm4 decryption failed code: {}", other);
+                        error!("gcm_encrypt_sm4 encrypt failed code: {}", other);
                     }
                 };
 
@@ -296,6 +296,8 @@ pub mod aead {
                 let tag = &in_out_ref[in_out_ref_len - self.tag_len..];
                 trace!("dec data:{:?}", hex::encode(data));
                 trace!("dec tag:{:?}", hex::encode(tag));
+                trace!("key:{:?}", hex::encode(&self.key.as_slice()));
+
 
                 let mut out_vec = vec![1u8; data.len()];
 
