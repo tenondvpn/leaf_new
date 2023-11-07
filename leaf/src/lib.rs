@@ -1,4 +1,5 @@
 extern crate core;
+extern crate core;
 
 use std::collections::HashMap;
 use std::io;

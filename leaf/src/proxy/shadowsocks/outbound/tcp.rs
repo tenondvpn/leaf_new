@@ -1,5 +1,6 @@
 extern crate rand;
 
+use core::slice::SlicePattern;
 use std::error::Error;
 use std::io;
 
@@ -94,19 +95,19 @@ impl TcpOutboundHandler for Handler {
         global_config.set_current_message_encrypted(need_enc);
         global_config.set_symmetric_cryptograph_type(enc_type);
 
-        global_config.set_client_unique_id(15720307825053696);
-        let password = hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e")
-                .unwrap();
-        // let (global_config, password)  = if need_enc {
-        //     let symmetric_crypto_info = proxy_node.get_symmetric_crypto_info();
-        //     let uid = symmetric_crypto_info.get_client_unique_id();
-        //     let password = symmetric_crypto_info.get_sec_key();
-        //     global_config.set_client_unique_id(uid);
-        //
-        //     (global_config, password)
-        // }   else {
-        //     (global_config, [0u8;0].as_slice())
-        // };
+        // global_config.set_client_unique_id(15720307825053696);
+        // let password = hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e")
+        //         .unwrap();
+        let (global_config, password)  = if need_enc {
+            let symmetric_crypto_info = proxy_node.get_symmetric_crypto_info();
+            let uid = symmetric_crypto_info.get_client_unique_id();
+            let password = symmetric_crypto_info.get_sec_key();
+            global_config.set_client_unique_id(uid);
+
+            (global_config, password.to_vec())
+        }   else {
+            (global_config, [0u8;0].as_slice())
+        };
 
         let pb = &global_config.write_to_bytes().unwrap();
         let mut buffer = BytesMut::new();

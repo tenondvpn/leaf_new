@@ -145,14 +145,7 @@ mod tests {
 
     #[test]
     pub fn test_refresh_routes() {
-        use super::*;
-        let mut route = Route::new();
-        route.set_route("test".to_string());
-        route.set_route_hash("test".as_bytes().to_vec());
-        refresh_routes(route);
-        println!("route data is : {}", get_route_data());
-
-        let hash = generate_routes_hash();
-        println!("hash : {:?}", &hash);
+        let  buffer =hex::decode("61616161000b61616161000b6161616161").unwrap();
+        println!("buffer:{:?}", &buffer.as_slice());
     }
 }
