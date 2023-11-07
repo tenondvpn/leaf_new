@@ -106,17 +106,17 @@ impl TcpOutboundHandler for Handler {
             (global_config, [0u8;0].to_vec())
         };
 
-        trace!("sm4 sec :{}, uid:{}", hex::encode(&password.as_slice()).as_str(), &global_config.get_client_unique_id());
+        debug!("sm4 sec :{}, uid:{}", hex::encode(&password.as_slice()).as_str(), &global_config.get_client_unique_id());
 
-        global_config.set_client_unique_id(15720307825053696);
-        let password = hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e")
-                .unwrap();
+        // global_config.set_client_unique_id(15720307825053696);
+        // let password = hex::decode("3ae2318f26a20a142d231b618a139ea17ae38b558071b9a4b16fab14c53973f19884e0ba3b495747fdccd32a88c6720e")
+        //         .unwrap();
 
         let pb = &global_config.write_to_bytes().unwrap();
         let mut buffer = BytesMut::new();
         buffer.put_u16(pb.len() as u16);
         buffer.put_slice(pb.as_slice());
-        trace!("send fist global_config :{:?}, pb.len:{:?}, pb.hex:{:?}", &global_config,pb.len(),  hex::encode(pb.as_slice()));
+        debug!("send fist global_config :{:?}, pb.len:{:?}, pb.hex:{:?}", &global_config,pb.len(),  hex::encode(pb.as_slice()));
         src_stream.write_all(&buffer).await?; // 注意这里是明文
 
 
