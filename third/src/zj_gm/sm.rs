@@ -191,7 +191,7 @@ pub fn sig_SM2(plain_txt: &[u8], sec_key: &[u8], pk: &[u8]) -> Vec<u8> {
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
             id.as_ptr(),
-            id_len as size_t,
+            0,
             pk.as_ptr(),
             pk_len as size_t,
             sec_key.as_ptr(),
@@ -225,7 +225,7 @@ pub fn verify_SM2(plain_txt: &[u8], signature:&[u8], pk: &[u8]) -> i32 {
             plain_txt.as_ptr(),
             plain_txt.len() as size_t,
             id.as_ptr(),
-            id_len as size_t,
+            0,
             signature.as_ptr(),
             signature.len() as size_t,
             pk.as_ptr(),
@@ -384,13 +384,13 @@ mod tests {
     #[test]
     fn tetst_verify_sm2() {
 
-        let plain = "0880a0b09d96b1f61b1260333133316536643737363630666664393466363030646564633664646364386433303661313539393465333266346431396435636431366535646237333236303632313833376438373933366232633839366266623535633963383365616364";
-        let server_pk = "30343039463944463331314535343231413135304444374431363145344243354336373231373946414431383333464330373642423038464633353646333530323043434541343930434532363737354135324443364541373138434331414136303041454430354642463335453038344136363332463630373244413941443133".as_bytes();
-        let signature = "3046022100c04cb7b6de2c88a830c2bdb6e2a381780ca36eb7b0dc81d6e6e4790881a55a04022100f94f73234182691098b12aa63808368a0c7b60f8806a38b178e263a1077eec26";
+        let plain = "0880a0988fa7c8f91b122c3637363536653635373236313734363535663733363537323736363537323566373236313665363436663664";
+        // let server_pk = "3045022100ec708a8d970ab85f5c0021796329e8ad948da5fbfe5744638b0d3800c052a45502206478afe56b4964ae9c4e9cec861399ddf80ed1af5060946ad800441778b31a9c";
+        let signature = "3045022100ec708a8d970ab85f5c0021796329e8ad948da5fbfe5744638b0d3800c052a45502206478afe56b4964ae9c4e9cec861399ddf80ed1af5060946ad800441778b31a9c";
 
         let plain = hex::decode(&plain).unwrap();
         let signature = hex::decode(&signature).unwrap();
-        let server_pk = hex::decode(&server_pk).unwrap();
+        let server_pk = "0409F9DF311E5421A150DD7D161E4BC5C672179FAD1833FC076BB08FF356F35020CCEA490CE26775A52DC6EA718CC1AA600AED05FBF35E084A6632F6072DA9AD13".as_bytes().to_vec();
         let result = verify_SM2(plain.as_slice(), signature.as_slice(), server_pk.as_slice());
         assert_eq!(result, 0)
     }
