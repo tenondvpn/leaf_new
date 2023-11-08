@@ -82,21 +82,24 @@ pub fn gcm_decrypt_sm4(
 }
 
 pub fn generate_key_pair() -> Result<(Vec<u8>, Vec<u8>), String> {
-    let mut pub_key = [0i8; 130];
-    let mut private_key = [0i8; 64];
-    let mut pub_key_len = Box::new(private_key.len() as size_t);
-    let mut private_key_len = Box::new(pub_key.len() as size_t);
+
+    let mut pub_key =  CString::new( [1u8; 130]).unwrap() ;
+    let mut private_key = CString::new( [1u8; 64]).unwrap() ;
+    let mut pub_key_len = Box::new(130 as size_t);
+    let mut private_key_len = Box::new(64 as size_t);
     unsafe {
+        let private_key_prt = private_key.into_raw();
+        let  pub_key_prt = pub_key.into_raw();
         match bindings::generate_key_pair(
-            private_key.as_mut_ptr(),
+            private_key_prt,
             private_key_len.as_mut(),
-            pub_key.as_mut_ptr(),
+            pub_key_prt,
             pub_key_len.as_mut(),
             asymmetric_cryptograph_t_SM2,
         ) {
             0 => {
-                Ok((private_key.map(|x|  {x as u8}).to_vec(),
-                    pub_key.map(|x| {x as u8}).to_vec()))
+                Ok((CString::from_raw(private_key_prt).into_bytes(),
+                    CString::from_raw(pub_key_prt).into_bytes()))
             }
             i => {
                 let msg = format!("Error: generate_key_pair failed :{}", i);
@@ -349,9 +352,9 @@ mod tests {
 
     #[test]
     fn test_asymmetric_encrypt_SM2() {
-        let (enckey, pk) = use_const_pk();
-        println!("pk_hex :{}", hex::encode(&pk));
-        println!("pk: {:?}", &pk);
+        let (enckey, pk) = generate_key_pair().unwrap();
+        println!("dec_len:{}  str: {}",&enckey.len(), hex::encode(&enckey));
+        println!("pk_lenL{} str: {}",&pk.len(),hex::encode(&pk));
 
         let plaintext = "1234567890123456789012345678901234".to_string();
         let output = asymmetric_encrypt_SM2(plaintext.as_bytes(), pk.as_slice()).unwrap();
@@ -493,7 +496,7 @@ mod tests {
     #[test]
     fn test_gen_sm2_key() {
         let (enc, pk) = generate_key_pair().unwrap();
-        println!("dec str: {}", hex::encode(enc));
-        println!("pk str: {}",hex::encode(pk));
+        println!("dec_len:{}  str: {}",&enc.len(), hex::encode(enc));
+        println!("pk_lenL{} str: {}",&pk.len(),hex::encode(pk));
     }
 }
