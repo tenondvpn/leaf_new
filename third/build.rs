@@ -32,6 +32,22 @@ fn build_zj_sm() {
         println!("cargo:rustc-link-lib=gmp");
         println!("cargo:rustc-link-lib=sm");
     }
+
+    if arch.eq("aarch64") && os.eq("android") {
+        let trarget_lib_str = libdir_path.join("aarch64-linux-android");
+        println!(
+            "cargo:rustc-link-search={}",
+            trarget_lib_str.to_str().unwrap().to_owned()
+        );
+        println!(
+            "cargo:rustc-env=LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{}",
+            trarget_lib_str.to_str().unwrap().to_owned()
+        );
+        // println!("cargo:rustc-link-lib=gmp");
+        println!("cargo:rustc-link-lib=sm");
+    }
+
+
     if arch.eq("x86_64") && os.eq("linux") {
         let trarget_lib_str = libdir_path.join("x86_64-linux");
 
