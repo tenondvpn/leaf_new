@@ -16,6 +16,7 @@ use crate::common::crypto::{
     Cipher, Decryptor, Encryptor, SizedCipher,
 };
 use crate::common::error_queue::push_error;
+use crate::proto::client_config::ErrorType;
 use crate::proto::client_config::ErrorType::crypto_error;
 use crate::proxy::shadowsocks::ss_router::check_special_tag_in_stream;
 
@@ -120,6 +121,7 @@ where
 }
 
 pub fn crypto_err() -> io::Error {
+    push_error(ErrorType::crypto_error,"crypto_err".to_string()).unwrap();
     io::Error::new(io::ErrorKind::Other, "crypto error")
 }
 
