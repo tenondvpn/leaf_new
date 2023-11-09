@@ -29,6 +29,7 @@ use crate::{
 use crate::common::error_queue::push_error;
 use crate::common::sync_valid_routes::{get_random_password_from_map, password_map_get};
 use crate::proto::client_config::{ClientNode, ProxyNode};
+use crate::proto::client_config::ErrorType::change_password_error;
 
 pub struct Handler {
     pub address: String,
@@ -47,7 +48,7 @@ impl TcpOutboundHandler for Handler {
         let (addr,port) =  match get_random_password_from_map() {
              None => {
                  let msg = format!("Proxy address is invalid");
-                 push_error();
+                 push_error(change_password_error, "".to_string()).unwrap();
                  error!("Proxy address is invalid");
                  ("10.101.20.31".to_string(), 19802)
              }
@@ -74,7 +75,7 @@ impl TcpOutboundHandler for Handler {
             (addr, port) = sess.proxy_addr.clone()
                 .ok_or_else(|| {
                     let msg = format!("Proxy address is invalid");
-                    push_error();
+                    push_error(change_password_error, "".to_string()).unwrap();
                     panic!("{}", msg);
                 })
                 .unwrap();
@@ -82,7 +83,7 @@ impl TcpOutboundHandler for Handler {
         let proxy_node = match password_map_get(addr.as_str(), port as u32) {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error();
+                push_error(change_password_error, "".to_string()).unwrap();
                 panic!("{}", msg);
             }
             Some(a) => a

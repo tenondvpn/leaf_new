@@ -16,6 +16,7 @@ use rand::Rng;
 use crate::common::error_queue::push_error;
 use crate::common::sync_valid_routes::{get_random_password_from_map, password_map_get};
 use crate::proto::client_config::ClientNode;
+use crate::proto::client_config::ErrorType::change_password_error;
 use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse};
 use crate::proxy::shadowsocks::convert_from_with_error_tag;
 
@@ -40,7 +41,7 @@ impl UdpOutboundHandler for Handler {
         let (addr,port) =  match get_random_password_from_map() {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error();
+                push_error(change_password_error, "".to_string()).unwrap();
                 panic!("{}", msg);
             }
             Some(a) => {(a.get_server_address().to_string(), a.get_server_port().clone())}
@@ -63,7 +64,7 @@ impl UdpOutboundHandler for Handler {
         let proxy_node =  match get_random_password_from_map() {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error();
+                push_error(change_password_error, "".to_string()).unwrap();
                 panic!("{}", msg);
             }
             Some(a) => a,
@@ -201,7 +202,7 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         let proxy_node = match password_map_get(self.address.as_str(), self.vpn_port as u32) {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error();
+                push_error(change_password_error, "".to_string()).unwrap();
                 panic!("{}", msg);
             }
             Some(a) => a

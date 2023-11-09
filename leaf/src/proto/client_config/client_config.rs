@@ -1065,7 +1065,7 @@ impl ::protobuf::reflect::ProtobufValue for CryptoMethodInfo {
 pub struct RustMessage {
     // message fields
     pub timestamp: ::std::option::Option<u64>,
-    pub message_type: ::protobuf::SingularPtrField<RustMessage>,
+    pub message_type: ::std::option::Option<RustMessageType>,
     pub data: ::protobuf::SingularField<::std::string::String>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -1104,14 +1104,14 @@ impl RustMessage {
         self.timestamp = ::std::option::Option::Some(v);
     }
 
-    // optional .leaf.RustMessage message_type = 2;
+    // optional .leaf.RustMessageType message_type = 2;
 
 
-    pub fn get_message_type(&self) -> &RustMessage {
-        self.message_type.as_ref().unwrap_or_else(|| <RustMessage as ::protobuf::Message>::default_instance())
+    pub fn get_message_type(&self) -> RustMessageType {
+        self.message_type.unwrap_or(RustMessageType::ERROR_EVENT)
     }
     pub fn clear_message_type(&mut self) {
-        self.message_type.clear();
+        self.message_type = ::std::option::Option::None;
     }
 
     pub fn has_message_type(&self) -> bool {
@@ -1119,22 +1119,8 @@ impl RustMessage {
     }
 
     // Param is passed by value, moved
-    pub fn set_message_type(&mut self, v: RustMessage) {
-        self.message_type = ::protobuf::SingularPtrField::some(v);
-    }
-
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_message_type(&mut self) -> &mut RustMessage {
-        if self.message_type.is_none() {
-            self.message_type.set_default();
-        }
-        self.message_type.as_mut().unwrap()
-    }
-
-    // Take field
-    pub fn take_message_type(&mut self) -> RustMessage {
-        self.message_type.take().unwrap_or_else(|| RustMessage::new())
+    pub fn set_message_type(&mut self, v: RustMessageType) {
+        self.message_type = ::std::option::Option::Some(v);
     }
 
     // optional string data = 3;
@@ -1176,11 +1162,6 @@ impl RustMessage {
 
 impl ::protobuf::Message for RustMessage {
     fn is_initialized(&self) -> bool {
-        for v in &self.message_type {
-            if !v.is_initialized() {
-                return false;
-            }
-        };
         true
     }
 
@@ -1196,7 +1177,7 @@ impl ::protobuf::Message for RustMessage {
                     self.timestamp = ::std::option::Option::Some(tmp);
                 },
                 2 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.message_type)?;
+                    ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.message_type, 2, &mut self.unknown_fields)?
                 },
                 3 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.data)?;
@@ -1216,9 +1197,8 @@ impl ::protobuf::Message for RustMessage {
         if let Some(v) = self.timestamp {
             my_size += ::protobuf::rt::value_size(1, v, ::protobuf::wire_format::WireTypeVarint);
         }
-        if let Some(ref v) = self.message_type.as_ref() {
-            let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        if let Some(v) = self.message_type {
+            my_size += ::protobuf::rt::enum_size(2, v);
         }
         if let Some(ref v) = self.data.as_ref() {
             my_size += ::protobuf::rt::string_size(3, &v);
@@ -1232,10 +1212,8 @@ impl ::protobuf::Message for RustMessage {
         if let Some(v) = self.timestamp {
             os.write_uint64(1, v)?;
         }
-        if let Some(ref v) = self.message_type.as_ref() {
-            os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
-            os.write_raw_varint32(v.get_cached_size())?;
-            v.write_to_with_cached_sizes(os)?;
+        if let Some(v) = self.message_type {
+            os.write_enum(2, ::protobuf::ProtobufEnum::value(&v))?;
         }
         if let Some(ref v) = self.data.as_ref() {
             os.write_string(3, &v)?;
@@ -1283,7 +1261,7 @@ impl ::protobuf::Message for RustMessage {
 impl ::protobuf::Clear for RustMessage {
     fn clear(&mut self) {
         self.timestamp = ::std::option::Option::None;
-        self.message_type.clear();
+        self.message_type = ::std::option::Option::None;
         self.data.clear();
         self.unknown_fields.clear();
     }

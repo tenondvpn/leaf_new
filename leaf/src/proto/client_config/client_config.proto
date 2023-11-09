@@ -33,7 +33,7 @@ message CryptoMethodInfo {
 
 message RustMessage {
   optional uint64 timestamp = 1;
-  optional RustMessage message_type =2;
+  optional RustMessageType message_type =2;
   optional string data = 3; // Json
 }
 message ErrorRustMessage {

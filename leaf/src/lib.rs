@@ -28,6 +28,7 @@ use third::zj_gm::sm::{sm3_hash, test_sm4};
 use crate::app::api::api_server::ApiServer;
 #[cfg(feature = "stat")]
 use crate::app::{stat_manager::StatManager, SyncStatManager};
+use crate::common::error_queue::take_error_message;
 use crate::common::sync_valid_routes::read_password_map;
 
 pub mod app;
@@ -326,6 +327,10 @@ pub fn test_sm3_hash(text: &str) -> String {
     let str = "1234";
     let buf = sm3_hash(str);
     hex::encode(buf)
+}
+
+pub fn get_error_message() -> String {
+    take_error_message()
 }
 pub fn a_test_sm4(text: &str) -> String {
     test_sm4(text)

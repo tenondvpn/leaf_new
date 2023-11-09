@@ -16,6 +16,7 @@ use crate::common::crypto::{
     Cipher, Decryptor, Encryptor, SizedCipher,
 };
 use crate::common::error_queue::push_error;
+use crate::proto::client_config::ErrorType::crypto_error;
 use crate::proxy::shadowsocks::ss_router::check_special_tag_in_stream;
 
 use super::crypto::{hkdf_sha1, kdf, ShadowsocksNonceSequence};
@@ -51,7 +52,7 @@ impl<T> ShadowedStream<T> {
     pub fn new(s: T, cipher: &str, password: &[u8]) -> io::Result<Self> {
         let cipher = AeadCipher::new(cipher).map_err(|e| {
             error!("create AEAD cipher failed: {}", &e);
-            push_error();
+            push_error(crypto_error, "".to_string()).unwrap();
             io::Error::new(
                 io::ErrorKind::Other,
                 format!("create AEAD cipher failed: {}", e),
@@ -59,7 +60,7 @@ impl<T> ShadowedStream<T> {
         })?;
         let psk = kdf(password, cipher.key_len()).map_err(|e| {
             error!("derive key failed: {}", &e);
-            push_error();
+            push_error(crypto_error, "".to_string()).unwrap();
             io::Error::new(io::ErrorKind::Other, format!("derive key failed: {}", e))
         })?;
         Ok(ShadowedStream {

@@ -20,6 +20,7 @@ use third::zj_gm::sm::{asymmetric_decrypt_SM2, asymmetric_encrypt_SM2, generate_
 
 use crate::common::error_queue::push_error;
 use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
+use crate::proto::client_config::ErrorType::change_password_error;
 use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, PasswordResponseData, ResponseStatusEnum, ServerConfig};
 
 lazy_static! {
@@ -68,10 +69,10 @@ pub async fn wait_for_password_notification() {
 }
 
 pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: String){
-    gen_client_sm2_pair(proxy_node).map_err(|err| push_error()).unwrap();
+    gen_client_sm2_pair(proxy_node).map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
     trace!("exchange_password_by_http 0: gen_client_sm2_pair succeeded");
 
-    let (mut global_config, client_random) = build_global_conf(proxy_node, log_info).map_err(|err| push_error()).unwrap();
+    let (mut global_config, client_random) = build_global_conf(proxy_node, log_info).map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
     trace!("exchange_password_by_http 1: build_global_conf succeeded");
     trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config).unwrap());
 
@@ -88,14 +89,14 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         .send()
         .await.map_err(|error| {
         error!("serde_json::from_str(PasswordResponse) error,{}", error);
-        push_error();
+        push_error(change_password_error, "".to_string()).unwrap();
     }).unwrap();
     trace!("exchange_password_by_http 2: send proxy server succeeded");
     let res =res.text().await.unwrap();
     trace!("exchange_password_by_http2: response:{}", &res);
     let res:PasswordResponse = serde_json::from_str(res.as_str()).map_err(|error| {
         error!("serde_json::from_str(PasswordResponse) error,{}", error);
-        push_error();
+        push_error(change_password_error, "".to_string()).unwrap();
     }).unwrap();
 
     trace!("exchange_password_by_http 3: map json succeeded");
@@ -115,7 +116,7 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         proxy_node.mut_symmetric_crypto_info().set_client_unique_id(response.get_client_unique_id());
         proxy_node.mut_symmetric_crypto_info().set_sec_key(sm4_sec);
     } else {
-        push_error();
+        push_error(change_password_error, "".to_string()).unwrap();
         panic!();
         // todo: 不要直接panic！
     };
@@ -125,10 +126,11 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
     let client_sec = asymmetric_info.get_client_sec_key();
 
 
-    let plain_bin = asymmetric_decrypt_SM2(encode_data.as_slice(), client_sec).map_err(|err| push_error()).unwrap();
+    let plain_bin = asymmetric_decrypt_SM2(encode_data.as_slice(), client_sec)
+        .map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
     #[cfg(test)]
     {
-        let res = T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error()).unwrap();
+        let res = T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
         trace!("exchange_password_by_http 4:0 asymmetric_decrypt_SM2 succeeded{:?}", &res);
     }
 
@@ -143,19 +145,13 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
             let msg =format!("error verify_SM2 failed: {} \n planin_bin:{:?} \n signature:{:?} \n server_pk:{:?} "
                              , i, hex::encode(&plain_bin), hex::encode(&signature), hex::encode(&server_pk));
             trace!("{}", &msg);
-            push_error();
-            let server_pk = hex::encode(server_pk);
-            let server_pk = hex::decode(server_pk).unwrap();
-            trace!("exchange_password_by_http 4:0 asymmetric_decrypt_SM2 succeeded");
-            let res = verify_SM2(plain_bin.as_slice(), signature.as_slice(), server_pk.as_slice()) ;
-            trace!("error res :{res}");
-
-            // panic!("{}", &msg);
+            push_error(change_password_error, "".to_string()).unwrap();
+            panic!("{msg}");
         }
     } ;
     trace!("exchange_password_by_http 4:1 verify_SM2 succeeded");
 
-    T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error()).unwrap()
+    T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error(change_password_error, "".to_string())).unwrap()
 }
 
 fn gen_client_sm2_pair(proxy_node: &mut ProxyNode) -> Result<(), Box<dyn Error>>  {
@@ -173,7 +169,7 @@ fn gen_password(p0: Vec<u8>, p1: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     trace!("p0.len {:?}, {:?} ", p0.len(), hex::encode(&p0));
     trace!("p1.len {:?}, {:?}", p1.len(), hex::encode(&p1));
     if p0.len() != p1.len() {
-        push_error();
+        push_error(change_password_error, "".to_string()).unwrap();
         panic!();
     }
 
@@ -330,7 +326,7 @@ pub fn wait_for_not_empty_password_map() {
 
 pub fn get_random_password_from_map() -> Option<ProxyNode> {
     let map =  password_map.read().map_err(|e| {
-        push_error();
+        push_error(change_password_error, "".to_string()).unwrap();
         error!("password_map.read() failed: {}", e);
     }).expect("Failed to acquire read lock for password_map");
     let mut rng = thread_rng();

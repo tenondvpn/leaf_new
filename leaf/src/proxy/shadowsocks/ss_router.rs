@@ -7,6 +7,7 @@ use log::{debug, error};
 use protobuf::Message;
 use tokio::io;
 use crate::common::error_queue::push_error;
+use crate::proto::client_config::ErrorType::server_error;
 
 use crate::proto::server_config::{ClientUIDStatusRes, PasswordResponse, Route};
 
@@ -54,7 +55,7 @@ pub fn check_special_tag_in_stream(buf: &mut BytesMut) -> bool {
         Ok(Some(data)) => {
             let msg = format!("consume_rout_data_from_buf aaaa response_data {:?}", data);
             error!{"{msg}"};
-            push_error();
+            push_error(server_error, msg.to_string()).unwrap();
             panic!("{msg}");
         }
         Ok(None) => false,
