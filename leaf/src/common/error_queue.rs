@@ -53,7 +53,7 @@ mod tests {
             thread::spawn(move || {
                 let msg = format!("change_password_error {i}" );
 
-                push_errors(error_type, msg.to_string()).unwrap();
+                super::push_error(error_type, msg.to_string()).unwrap();
                 println!("push error :{msg}");
             })
         }).collect();

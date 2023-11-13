@@ -29,7 +29,7 @@ use crate::app::api::api_server::ApiServer;
 #[cfg(feature = "stat")]
 use crate::app::{stat_manager::StatManager, SyncStatManager};
 use crate::common::error_queue::take_error_message;
-use crate::common::sync_valid_routes::read_password_map;
+use crate::common::sync_valid_routes::{exchange_enc_password, read_password_map, wait_for_password_notification};
 
 pub mod app;
 pub mod common;
@@ -336,6 +336,27 @@ pub fn a_test_sm4(text: &str) -> String {
     test_sm4(text)
 }
 
+
+pub fn exchange_password(json: String) {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let x = rt.enter();
+    exchange_enc_password(json);
+    // 等待交换密钥完成
+    trace!("等待交换密钥完成");
+    // common::sync_valid_routes::wait_for_not_empty_password_map();
+
+    rt.block_on(wait_for_password_notification());
+    {
+        let map = read_password_map();
+        trace!("read_password_map:{:?}", map);
+    }
+    trace!("密钥交换完成");
+
+}
+
 fn new_runtime(opt: &RuntimeOption) -> Result<tokio::runtime::Runtime, Error> {
     match opt {
         RuntimeOption::SingleThread => tokio::runtime::Builder::new_current_thread()
@@ -428,16 +449,7 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
     let outbound_manager = Arc::new(RwLock::new(
         OutboundManager::new(&config.outbounds, dns_client.clone()).map_err(Error::Config)?,
     ));
-    // 等待交换密钥完成
-    trace!("等待交换密钥完成");
 
-    // common::sync_valid_routes::wait_for_not_empty_password_map();
-    rt.block_on(common::sync_valid_routes::wait_for_password_notification());
-    {
-        let map = read_password_map();
-        trace!("read_password_map:{:?}", map);
-    }
-    trace!("密钥交换完成");
 
 
     let router = Arc::new(RwLock::new(Router::new(

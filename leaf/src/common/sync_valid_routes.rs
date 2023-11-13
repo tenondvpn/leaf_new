@@ -63,9 +63,9 @@ pub async fn wait_for_password_notification() {
     } )
         .await
         .map_err(|error| {
-            println!("error: {}", error)
+            error!("error: {}", error);
+            push_error(change_password_error, "".to_string()).unwrap();
         }).unwrap();
-    //todo: notify vpn started status
 }
 
 pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: String){
@@ -371,6 +371,7 @@ mod tests {
     use tokio::net::{TcpListener, TcpSocket, TcpStream};
     use third::zj_gm::sm::asymmetric_decrypt_SM2;
     use crate::common::sync_valid_routes::{build_global_conf, exchange_enc_password, exchange_password_by_http, wait_for_not_empty_password_map, wait_for_password_notification};
+    use crate::exchange_password;
     use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
     use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, ResponseStatusEnum, ServerConfig};
     use crate::proto::server_config::EncMethodEnum::SM4_GCM;
@@ -467,12 +468,12 @@ mod tests {
             .apply().unwrap();
     }
 
-    #[tokio::test]
-    async fn test_exchange_enc_password() {
+    #[test]
+    fn test_exchange_enc_password() {
         setup_logger();
         let string = get_node_list_test_json();
-        exchange_enc_password(string.clone());
-        wait_for_password_notification().await;
+        exchange_password(string.clone());
+       // rt.block_on(wait_for_password_notification());
     }
 
 

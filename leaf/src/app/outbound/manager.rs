@@ -157,10 +157,6 @@ impl OutboundManager {
                         config::ShadowsocksOutboundSettings::parse_from_bytes(&outbound.settings)
                             .map_err(|e| anyhow!("invalid [{}] outbound settings: {}", &tag, e))?;
 
-
-
-                    crate::common::sync_valid_routes::exchange_enc_password(settings.password.clone());
-
                     let mut tcp = Box::new(shadowsocks::outbound::TcpHandler {
                         address: settings.address.clone(),
                         port: settings.port as u16,
