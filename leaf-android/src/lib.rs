@@ -54,48 +54,126 @@ pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_isLeafRunn
 pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getStatus(
     env: JNIEnv,
     _: JClass,
-) -> sys::jstring {
-    let output = env
-        .new_string(leaf::get_status())
+) -> sys::jstring  {
+    let output = env.new_string(leaf::get_status())
         .expect("Couldn't create java string!");
     output.into_inner()
 }
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getRouteData(
+pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_getErrorMessage(
     env: JNIEnv,
-    _: JClass,
-) -> sys::jstring {
-    let output = env
-        .new_string(leaf::get_route_data())
+    _: JClass, ) -> sys::jstring {
+    let output = env.new_string(leaf::get_error_message())
         .expect("Couldn't create java string!");
     output.into_inner()
 }
+
+
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_testSm3Hash(
+pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_exchangePassword(
     env: JNIEnv,
     _: JClass,
-    text: JString,
-) -> sys::jstring {
-    let test = env.get_string(text).unwrap().to_str().unwrap().to_owned();
-    let string = leaf::test_sm3_hash(&test);
-    env.new_string(string)
-        .expect("Couldn't create java string!")
-        .into_inner()
+    json: JString,
+) {
+    let config_path = env
+        .get_string(json)
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
+
+    leaf::exchange_password(config_path);
+}
+
+
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_leaf_example_aleaf_SimpleVpnService_exchangePassword(
+    env: JNIEnv,
+    _: JClass,
+    json: JString,
+) {
+    let config_path = env
+        .get_string(json)
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
+
+    leaf::exchange_password(config_path);
+}
+
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_leaf_example_aleaf_SimpleVpnService_runLeaf(
+    env: JNIEnv,
+    _: JClass,
+    config_path: JString,
+) {
+    let config_path = env
+        .get_string(config_path)
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let opts = leaf::StartOptions {
+        config: leaf::Config::File(config_path),
+        runtime_opt: leaf::RuntimeOption::MultiThreadAuto(1 * 1024 * 1024),
+    };
+    leaf::start(0, opts).unwrap();
 }
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern "C" fn Java_com_leaf_example_aleaf_SimpleVpnService_testSm4(
+pub unsafe extern "C" fn Java_leaf_example_aleaf_SimpleVpnService_stopLeaf(
+    _: JNIEnv,
+    _: JClass,
+) -> sys::jboolean {
+    if leaf::shutdown(0) {
+        sys::JNI_TRUE
+    } else {
+        sys::JNI_FALSE
+    }
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_leaf_example_aleaf_SimpleVpnService_isLeafRunning(
+    _: JNIEnv,
+    _: JClass,
+) -> sys::jboolean {
+    if leaf::is_running(0) {
+        sys::JNI_TRUE
+    } else {
+        sys::JNI_FALSE
+    }
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_leaf_example_aleaf_SimpleVpnService_getStatus(
     env: JNIEnv,
     _: JClass,
-    text: JString,
-) -> sys::jstring {
-    let test = env.get_string(text).unwrap().to_str().unwrap().to_owned();
-    let string = leaf::a_test_sm4(&test);
-    env.new_string(string)
-        .expect("Couldn't create java string!")
-        .into_inner()
+) -> sys::jstring  {
+    let output = env.new_string(leaf::get_status())
+        .expect("Couldn't create java string!");
+    output.into_inner()
 }
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern "C" fn Java_leaf_example_aleaf_SimpleVpnService_getErrorMessage(
+    env: JNIEnv,
+    _: JClass, ) -> sys::jstring {
+    let output = env.new_string(leaf::get_error_message())
+        .expect("Couldn't create java string!");
+    output.into_inner()
+}
+
+
+
