@@ -338,6 +338,9 @@ pub fn a_test_sm4(text: &str) -> String {
 
 
 pub fn exchange_password(json: String) {
+    android_logger::init_once(
+        android_logger::Config::default().with_min_level(Level::Trace).with_tag("myrust")
+    );
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

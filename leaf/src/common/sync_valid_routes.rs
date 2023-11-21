@@ -36,7 +36,7 @@ lazy_static! {
      trace!("password :{:?}", &json);
     let mut client_node: ClientNode = serde_json::from_str(&json).unwrap();
     let loginfo = client_node.get_user_login_information().to_owned();
-
+     clean_cache();
     tokio::spawn(async move {
         for proxy_node in client_node.mut_node_list() {
             let login_info_c = loginfo.clone();
@@ -293,6 +293,13 @@ pub fn set_password_map_set(proxy_node: &ProxyNode) {
     let key = format!("{}:{}", proxy_node.get_server_address(), proxy_node.get_server_port());
     let mut map = password_map.write().unwrap();
     map.insert(key, proxy_node.to_owned());
+}
+
+pub fn clean_cache() {
+    trace!("clean_cache");
+
+    let mut map = password_map.write().unwrap();
+    map.clear();
 }
 
 pub fn password_map_get(server_address:&str, server_port:u32) -> Option<ProxyNode> {

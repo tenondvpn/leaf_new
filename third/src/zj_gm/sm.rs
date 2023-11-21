@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn test_gen_sm2_key() {
         let (enc, pk) = generate_key_pair().unwrap();
-        println!("dec_len:{}  str: {}",&enc.len(), hex::encode(enc));
-        println!("pk_lenL{} str: {}",&pk.len(),hex::encode(pk));
+        println!("dec_len:{}  str: {:?}",&enc.len(), &enc);
+        println!("pk_lenL{} str: {:?}",&pk.len(),&pk);
     }
 }
