@@ -2,11 +2,11 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
+use std::sync::{Mutex, RwLock};
 use std::thread;
 use std::time::Duration;
-use futures_util::TryFutureExt;
 
+use futures_util::TryFutureExt;
 //use easy_http_request::DefaultHttpRequest;
 use lazy_static::lazy_static;
 use log::{debug, error, trace};
@@ -20,7 +20,7 @@ use third::zj_gm::sm::{asymmetric_decrypt_SM2, asymmetric_encrypt_SM2, generate_
 
 use crate::common::error_queue::push_error;
 use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
-use crate::proto::client_config::ErrorType::change_password_error;
+use crate::proto::client_config::ErrorType::{change_password_error, rust_error};
 use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, PasswordResponseData, ResponseStatusEnum, ServerConfig};
 
 lazy_static! {
@@ -34,7 +34,11 @@ lazy_static! {
 
  pub fn exchange_enc_password(json: String) {
      trace!("password :{:?}", &json);
-    let mut client_node: ClientNode = serde_json::from_str(&json).unwrap();
+    let mut client_node: ClientNode =  if let Ok(t) =  serde_json::from_str(&json).map_err(|e| push_error(change_password_error, "解析配置文件失败".to_owned())) {
+        t
+    } else {
+        return;
+    };
     let loginfo = client_node.get_user_login_information().to_owned();
      clean_cache();
     tokio::spawn(async move {
@@ -46,7 +50,10 @@ lazy_static! {
                 debug!("not need swap password");
 
             } else {
-                exchange_password_by_http(proxy_node, login_info_c).await;
+                if let Err(e) = exchange_password_by_http(proxy_node, login_info_c).await {
+                    error!("failed to exchange password :{:?}", e);
+                    push_error(change_password_error, "交换密钥失败".to_owned())
+                }
                 debug!("need swap password");
 
             }
@@ -64,19 +71,21 @@ pub async fn wait_for_password_notification() {
         .await
         .map_err(|error| {
             error!("error: {}", error);
-            push_error(change_password_error, "".to_string()).unwrap();
-        }).unwrap();
+            push_error(change_password_error, "".to_string());
+        }).unwrap_or(());
 }
 
-pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: String){
-    gen_client_sm2_pair(proxy_node).map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
+pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: String) -> Result<(), Box<dyn Error>>{
+    gen_client_sm2_pair(proxy_node).map_err(|err| push_error(change_password_error, "生成SM2 公私钥对失败".to_string())).unwrap_or(());
     trace!("exchange_password_by_http 0: gen_client_sm2_pair succeeded");
 
-    let (mut global_config, client_random) = build_global_conf(proxy_node, log_info).map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
+    let (mut global_config, client_random) = build_global_conf(proxy_node, log_info).map_err(|err| push_error(change_password_error, "构建交换密钥报文失败".to_string()))
+        .unwrap_or((GlobalConfig::default(), String::new()));
     trace!("exchange_password_by_http 1: build_global_conf succeeded");
-    trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config).unwrap());
+    trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config)?);
 
     let client = reqwest::Client::new();
+    // todo : http 端口
     let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), 19802);
 
 
@@ -89,26 +98,30 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         .send()
         .await.map_err(|error| {
         error!("serde_json::from_str(PasswordResponse) error,{}", error);
-        push_error(change_password_error, "".to_string()).unwrap();
-    }).unwrap();
+        push_error(change_password_error, "解析服务端返回结果失败".to_string());
+        error
+    })?;
     trace!("exchange_password_by_http 2: send proxy server succeeded");
-    let res =res.text().await.unwrap();
+    let res =res.text().await?;
     trace!("exchange_password_by_http2: response:{}", &res);
     let res:PasswordResponse = serde_json::from_str(res.as_str()).map_err(|error| {
         error!("serde_json::from_str(PasswordResponse) error,{}", error);
-        push_error(change_password_error, "".to_string()).unwrap();
-    }).unwrap();
+        push_error(change_password_error, "".to_string());
+        error
+    })?;
 
     trace!("exchange_password_by_http 3: map json succeeded");
 
     if res.get_status() == ResponseStatusEnum::PASSWORD_SUCCESS {
-        let data = hex::decode(res.get_data()).unwrap();
-        let signature = hex::decode(res.get_check_value()).unwrap();
+
+        let data = hex::decode(res.get_data()).map_err(|e| { push_error(rust_error, e.to_string()); e})?;
+        let signature = hex::decode(res.get_check_value())?;
         let response: PasswordResponseData = decode_response(data,
                                                              signature,
-                                                             proxy_node.get_asymmetric_crypto_info());
+                                                             proxy_node.get_asymmetric_crypto_info())?;
         trace!("exchange_password_by_http 4: decode_response succeeded  \n {:?}", &response);
-        let sm4_sec = gen_password(hex::decode(client_random).unwrap() , hex::decode(response.get_server_random()).unwrap()).unwrap();
+        let sm4_sec = gen_password(hex::decode(client_random)?,
+                                   hex::decode(response.get_server_random())?)?;
         trace!("exchange_password_by_http 5: gen_password succeeded,uid:{:?}, sec: {:?}",
             &response.get_client_unique_id(),
             hex::encode(&sm4_sec));
@@ -116,27 +129,35 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         proxy_node.mut_symmetric_crypto_info().set_client_unique_id(response.get_client_unique_id());
         proxy_node.mut_symmetric_crypto_info().set_sec_key(sm4_sec);
     } else {
-        push_error(change_password_error, "".to_string()).unwrap();
-        panic!();
-        // todo: 不要直接panic！
+        push_error(change_password_error, "服务器返回交换密要信息失败".to_string());
     };
+    Ok(())
 }
 
-fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmetric_info: &CryptoMethodInfo) -> T {
+fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmetric_info: &CryptoMethodInfo) -> Result<T, String> {
     let client_sec = asymmetric_info.get_client_sec_key();
 
 
-    let plain_bin = asymmetric_decrypt_SM2(encode_data.as_slice(), client_sec)
-        .map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
+    let plain_bin =  if let Ok(plain_bin) = asymmetric_decrypt_SM2(encode_data.as_slice(), client_sec) {
+        plain_bin
+    } else {
+        push_error(change_password_error, "sm2解密失败".to_string());
+        return Err(format!("sm2解密失败"));
+    };
+
+
     #[cfg(test)]
     {
-        let res = T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error(change_password_error, "".to_string())).unwrap();
+        let res = T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error(change_password_error, "".to_string())).unwrap_or(T::new());
         trace!("exchange_password_by_http 4:0 asymmetric_decrypt_SM2 succeeded{:?}", &res);
     }
 
-    // 如果你把 decode 移到 解密之前，就会报错，非常奇怪
     let pk =String::from(asymmetric_info.get_server_pubkey());
-    let server_pk = hex::decode(pk).unwrap();
+    let server_pk = if let Ok(t) = hex::decode(pk) {
+        t
+    } else {
+        return Err(format!("decode_response decode error"));
+    };
 
     trace!("exchange_password_by_http 4:0 asymmetric_decrypt_SM2 succeeded");
     match verify_SM2(plain_bin.as_slice(), signature.as_slice(), server_pk.as_slice()) {
@@ -145,13 +166,19 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
             let msg =format!("error verify_SM2 failed: {} \n planin_bin:{:?} \n signature:{:?} \n server_pk:{:?} "
                              , i, hex::encode(&plain_bin), hex::encode(&signature), hex::encode(&server_pk));
             trace!("{}", &msg);
-            push_error(change_password_error, "".to_string()).unwrap();
-            panic!("{msg}");
+            push_error(change_password_error, "sm2验证失败".to_string());
+            return Err(format!("sm2验证失败"));
         }
     } ;
     trace!("exchange_password_by_http 4:1 verify_SM2 succeeded");
 
-    T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error(change_password_error, "".to_string())).unwrap()
+    if let Ok(t) = T::parse_from_bytes(plain_bin.as_slice()) {
+        Ok(t)
+    } else {
+        push_error(change_password_error, "".to_string());
+        return Err(format!("change_password_error ： parse_from_bytes error"))
+    }
+
 }
 
 fn gen_client_sm2_pair(proxy_node: &mut ProxyNode) -> Result<(), Box<dyn Error>>  {
@@ -165,12 +192,12 @@ fn gen_client_sm2_pair(proxy_node: &mut ProxyNode) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
-fn gen_password(p0: Vec<u8>, p1: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
+fn gen_password(p0: Vec<u8>, p1: Vec<u8>) -> Result<Vec<u8>, String> {
     trace!("p0.len {:?}, {:?} ", p0.len(), hex::encode(&p0));
     trace!("p1.len {:?}, {:?}", p1.len(), hex::encode(&p1));
     if p0.len() != p1.len() {
-        push_error(change_password_error, "".to_string()).unwrap();
-        panic!();
+        push_error(change_password_error, "合成密钥失败".to_string());
+        return Err("合成密钥失败".to_string()) ;
     }
 
     let mut p:Vec<u8> = vec![0; p0.len()];
@@ -204,7 +231,7 @@ fn build_global_conf(proxy_node: &ProxyNode, log_info: String) -> Result<(Global
 
 fn sm2_encode(proxy_node: &ProxyNode, server_config: &mut ServerConfig) -> Result<(String, String), Box<dyn Error>> {
     trace!("Before  SM2 server_config: {:?}", &server_config);
-    let server_conf_bin = server_config.write_to_bytes().unwrap();
+    let server_conf_bin = server_config.write_to_bytes()?;
 
     let asymmetric_info = proxy_node.get_asymmetric_crypto_info();
     let pk = hex::decode(&asymmetric_info.get_server_pubkey())?;
@@ -231,10 +258,7 @@ fn build_server_conf(proxy_node: &ProxyNode, log_info: String) -> Result<ServerC
     let mut random_content = vec![0u8; 48]; // 32 B
     rng.fill_bytes((&mut random_content).as_mut());
 
-    // #[cfg(test)]
-    // {
-    //     random_content =  hex::decode( "23fa326ef603656bc541a90a3d2bf488c0e3999c343c").unwrap();
-    // }
+
 
     let asymmetric_info = proxy_node.get_asymmetric_crypto_info();
 
@@ -291,15 +315,20 @@ pub fn GetResponseHash(svr_add: String) -> String {
 
 pub fn set_password_map_set(proxy_node: &ProxyNode) {
     let key = format!("{}:{}", proxy_node.get_server_address(), proxy_node.get_server_port());
-    let mut map = password_map.write().unwrap();
-    map.insert(key, proxy_node.to_owned());
+    if let Ok (mut map) = password_map.write() {
+        map.insert(key, proxy_node.to_owned());
+    } else {
+        error!("failed to write password")
+    };
 }
 
 pub fn clean_cache() {
     trace!("clean_cache");
-
-    let mut map = password_map.write().unwrap();
-    map.clear();
+    if let  Ok( mut map) =  password_map.write() {
+        map.clear();
+    } else {
+        error!("failed to clear password");
+    }
 }
 
 pub fn password_map_get(server_address:&str, server_port:u32) -> Option<ProxyNode> {
@@ -308,34 +337,33 @@ pub fn password_map_get(server_address:&str, server_port:u32) -> Option<ProxyNod
     map.get(key.as_str()).cloned()
 }
 
-pub fn read_password_map<'a>() -> RwLockReadGuard<'a, HashMap<String, ProxyNode>> {
-    password_map.read().expect("Failed to acquire read lock for password_map")
+pub fn read_password_map<'a>() -> HashMap<String, ProxyNode> {
+    let map = match password_map.read() {
+        Ok(guard) => guard.clone(),
+        Err(_) => {
+            error!("read password map failed");
+            HashMap::new()
+        }
+    };
+    return map;
 }
 
 fn is_password_map_empty() -> bool {
-    let map = password_map.read().expect("Failed to acquire read lock for password_map");
+    let map = read_password_map();
     let bool = map.is_empty();
     bool
 }
 
-pub fn wait_for_not_empty_password_map() {
-    let mut time = 0;
-    while is_password_map_empty() {
-        thread::sleep_ms(1000);
-        time = time + 1;
-        trace!("Waiting for password time :{} * 100ms", &time);
-    }
-    {
-        let map = read_password_map();
-        trace!("read_password_map:{:?}", map);
-    }
-}
 
 pub fn get_random_password_from_map() -> Option<ProxyNode> {
-    let map =  password_map.read().map_err(|e| {
-        push_error(change_password_error, "".to_string()).unwrap();
-        error!("password_map.read() failed: {}", e);
-    }).expect("Failed to acquire read lock for password_map");
+    let map = match password_map.read() {
+        Ok(map) => map,
+        Err(e) => {
+            push_error(change_password_error, "".to_string());
+            error!("password_map.read() failed: {}", e);
+            return None;
+        }
+    };
     let mut rng = thread_rng();
     let random_index = rng.gen_range(0..map.len());
 
@@ -370,17 +398,16 @@ fn use_test_client_key() -> (Vec<u8>, Vec<u8>) {
 
 #[cfg(test)]
 mod tests {
-    use std::net::SocketAddr;
     use bytes::{BufMut, BytesMut};
     use log::debug;
     use protobuf::Message;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::{TcpListener, TcpSocket, TcpStream};
-    use third::zj_gm::sm::asymmetric_decrypt_SM2;
-    use crate::common::sync_valid_routes::{build_global_conf, exchange_enc_password, exchange_password_by_http, wait_for_not_empty_password_map, wait_for_password_notification};
+    use tokio::net::{TcpListener, TcpStream};
+
+    use crate::common::sync_valid_routes::exchange_password_by_http;
     use crate::exchange_password;
     use crate::proto::client_config::{ClientNode, CryptoMethodInfo, ProxyNode};
-    use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, ResponseStatusEnum, ServerConfig};
+    use crate::proto::server_config::{EncMethodEnum, GlobalConfig, PasswordResponse, ResponseStatusEnum};
     use crate::proto::server_config::EncMethodEnum::SM4_GCM;
 
     #[tokio::test]

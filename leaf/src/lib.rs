@@ -1,3 +1,4 @@
+#![feature(io_error_other)]
 extern crate core;
 
 use std::collections::HashMap;

@@ -1,4 +1,6 @@
 use std::{cmp::min, convert::TryFrom, io, sync::Arc};
+use std::num::ParseIntError;
+
 extern crate rand;
 use crate::common;
 use crate::{
@@ -41,8 +43,8 @@ impl UdpOutboundHandler for Handler {
         let (addr,port) =  match get_random_password_from_map() {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error(change_password_error, "".to_string()).unwrap();
-                panic!("{}", msg);
+                push_error(change_password_error, "".to_string());
+                return None;
             }
             Some(a) => {(a.get_server_address().to_string(), a.get_server_port().clone())}
         };
@@ -64,8 +66,8 @@ impl UdpOutboundHandler for Handler {
         let proxy_node =  match get_random_password_from_map() {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error(change_password_error, "".to_string()).unwrap();
-                panic!("{}", msg);
+                push_error(change_password_error, "".to_string());
+                return  Err(io::Error::new(io::ErrorKind::Other, format!("Proxy address is invalid: ")));
             }
             Some(a) => a,
         };
@@ -91,12 +93,19 @@ impl UdpOutboundHandler for Handler {
             _ => None,
         };
 
+        let vpn_ip = match  address.parse::<u32>() {
+            Ok(a) => {a}
+            Err(b) => {
+                error!{"{:?}", b};
+                return Err(io::Error::new(io::ErrorKind::Other, "invalid input"));
+            }
+        };
         Ok(Box::new(Datagram {
             dgram,
             socket,
             destination,
             server_addr,
-            vpn_ip: address.parse::<u32>().unwrap(),
+            vpn_ip: vpn_ip,
             vpn_port: port as u16,
             pk_str: tmp_pk.to_string(),
             ver: tmp_ver.to_string(),
@@ -202,8 +211,8 @@ impl OutboundDatagramSendHalf for DatagramSendHalf {
         let proxy_node = match password_map_get(self.address.as_str(), self.vpn_port as u32) {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error(change_password_error, "".to_string()).unwrap();
-                panic!("{}", msg);
+                push_error(change_password_error, "send_to error".to_string());
+                return Err(io::Error::new(io::ErrorKind::Other, "send_to error"));
             }
             Some(a) => a
         };

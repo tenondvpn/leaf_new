@@ -8,26 +8,41 @@ lazy_static! {
     static ref RUST_ERROR_MESSAGE: Mutex<Option<String>> = Mutex::new(Option::None);
 }
 // pub fn push_error(error: ErrorType, msg: String) -> Result<(), Box<dyn Error>> {}
-pub fn push_error(error:ErrorType, msg:String) -> Result<(), Box<dyn Error>>{
-
+pub fn push_error(error: ErrorType, msg: String) {
+    error!("push_error msg: {:?}", &msg);
     let mut error_rust_message = ErrorRustMessage::default();
     error_rust_message.set_error_type(error);
     error_rust_message.set_error_msg(msg);
-    let error_rust_message = serde_json::to_string(&error_rust_message)?;
-    // let mut rust_message = RustMessage::default();
-    // rust_message.set_message_type(RustMessageType::ERROR_EVENT);
-    // rust_message.set_timestamp(chrono::Local::now().timestamp() as u64);
-    // rust_message.set_data(error_rust_message);
-
-    set_error_rust_message(error_rust_message)?;
-    Ok(())
+    let error_rust_message = serde_json::to_string(&error_rust_message);
+    match error_rust_message {
+        Ok(message) => {
+            if let Err(e) = set_error_rust_message(message) {
+                // 处理 set_error_rust_message 的错误，可以记录日志或者其他操作
+                error!("Error setting error message: {:?}", e);
+            }
+        }
+        Err(e) => {
+            // 处理 serde_json::to_string 的错误，可以记录日志或者其他操作
+            error!("Error serializing error message: {:?}", e);
+        }
+    }
 }
 
+
+
 pub fn take_error_message() -> String {
-     RUST_ERROR_MESSAGE.lock().map_err(|e| {
-        error!("take_error_message error {e}");
-        e
-    }).unwrap().take().unwrap_or_else(|| {"".to_owned()})
+    match RUST_ERROR_MESSAGE.lock() {
+        Ok(mut guard) => {
+            match guard.take() {
+                Some(error_message) => error_message,
+                None => "".to_owned(),
+            }
+        }
+        Err(e) => {
+            error!("take_error_message error {:?}", e);
+            "".to_owned()
+        }
+    }
 }
 
 
@@ -53,7 +68,7 @@ mod tests {
             thread::spawn(move || {
                 let msg = format!("change_password_error {i}" );
 
-                super::push_error(error_type, msg.to_string()).unwrap();
+                super::push_error(error_type, msg.to_string());
                 println!("push error :{msg}");
             })
         }).collect();

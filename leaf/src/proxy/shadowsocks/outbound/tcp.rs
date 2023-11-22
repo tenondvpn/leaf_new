@@ -48,9 +48,9 @@ impl TcpOutboundHandler for Handler {
         let (addr,port) =  match get_random_password_from_map() {
              None => {
                  let msg = format!("Proxy address is invalid");
-                 push_error(change_password_error, "".to_string()).unwrap();
+                 push_error(change_password_error, "".to_string());
                  error!("Proxy address is invalid");
-                 ("10.101.20.31".to_string(), 19802)
+                 return  None
              }
              Some(a) => {(a.get_server_address().to_string(), a.get_server_port().clone())}
          };
@@ -72,19 +72,20 @@ impl TcpOutboundHandler for Handler {
         let mut port = 0u16;
         {
 
-            (addr, port) = sess.proxy_addr.clone()
-                .ok_or_else(|| {
+            (addr, port) = match   sess.proxy_addr.clone() {
+                None => {
                     let msg = format!("Proxy address is invalid");
-                    push_error(change_password_error, "".to_string()).unwrap();
-                    panic!("{}", msg);
-                })
-                .unwrap();
+                    push_error(change_password_error, "".to_string());
+                    return Err(std::io::Error::other(msg));
+                }
+                Some(a) => {a}
+            }
         }
         let proxy_node = match password_map_get(addr.as_str(), port as u32) {
             None => {
                 let msg = format!("Proxy address is invalid");
-                push_error(change_password_error, "".to_string()).unwrap();
-                panic!("{}", msg);
+                push_error(change_password_error, "".to_string());
+                return Err(std::io::Error::other(msg));
             }
             Some(a) => a
         };
