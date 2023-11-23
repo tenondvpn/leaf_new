@@ -228,8 +228,7 @@ pub mod aead {
 
                 (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
                 in_out.extend(&tag);
-                trace!("out_vec:{:?}", hex::encode(&out_vec));
-                trace!("tag:{:?}", hex::encode(&tag));
+//                 trace!("out_vec:{:?}", &out_vec.len();
             } else {
                 let ciphertext = symm::encrypt_aead(
                     self.cipher,
@@ -294,10 +293,10 @@ pub mod aead {
                 let in_out_ref_len = in_out_ref.len();
                 let data = &in_out_ref[..in_out_ref_len - self.tag_len];
                 let tag = &in_out_ref[in_out_ref_len - self.tag_len..];
-                trace!("dec data:{:?}", hex::encode(data));
-                trace!("dec tag:{:?}", hex::encode(tag));
-                trace!("key:{:?}", hex::encode(&self.key.as_slice()));
-                trace!("nonce:{:?}", hex::encode(&nonce.as_slice()));
+//                 trace!("dec data:{:?}", hex::encode(data));
+//                 trace!("dec tag:{:?}", hex::encode(tag));
+//                 trace!("key:{:?}", hex::encode(&self.key.as_slice()));
+//                 trace!("nonce:{:?}", hex::encode(&nonce.as_slice()));
 
 
                 let mut out_vec = vec![1u8; data.len()];
@@ -314,7 +313,7 @@ pub mod aead {
                         error!("gcm_decrypt_sm4 decryption failed code: {}", other);
                     }
                 };
-                trace!("dec out_vec:{:?}", hex::encode(&out_vec));
+//                 trace!("dec out_vec:{:?}", hex::encode(&out_vec));
                 (&mut in_out.as_mut()[..out_vec.len()]).copy_from_slice(&out_vec);
             } else {
                 let in_out_ref = in_out.as_ref();
