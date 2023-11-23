@@ -20,6 +20,7 @@ message ProxyNode {
 
   optional CryptoMethodInfo symmetric_crypto_info = 7; // 对称算法信息
   optional CryptoMethodInfo asymmetric_crypto_info = 8; // 非对称算法信息
+  optional uint32 server_http_port= 9;
 }
 
 message CryptoMethodInfo {

@@ -228,6 +228,7 @@ pub struct ProxyNode {
     pub client_platform_category: ::protobuf::SingularField<::std::string::String>,
     pub symmetric_crypto_info: ::protobuf::SingularPtrField<CryptoMethodInfo>,
     pub asymmetric_crypto_info: ::protobuf::SingularPtrField<CryptoMethodInfo>,
+    pub server_http_port: ::std::option::Option<u32>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -510,6 +511,25 @@ impl ProxyNode {
     pub fn take_asymmetric_crypto_info(&mut self) -> CryptoMethodInfo {
         self.asymmetric_crypto_info.take().unwrap_or_else(|| CryptoMethodInfo::new())
     }
+
+    // optional uint32 server_http_port = 9;
+
+
+    pub fn get_server_http_port(&self) -> u32 {
+        self.server_http_port.unwrap_or(0)
+    }
+    pub fn clear_server_http_port(&mut self) {
+        self.server_http_port = ::std::option::Option::None;
+    }
+
+    pub fn has_server_http_port(&self) -> bool {
+        self.server_http_port.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_server_http_port(&mut self, v: u32) {
+        self.server_http_port = ::std::option::Option::Some(v);
+    }
 }
 
 impl ::protobuf::Message for ProxyNode {
@@ -571,6 +591,13 @@ impl ::protobuf::Message for ProxyNode {
                 8 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.asymmetric_crypto_info)?;
                 },
+                9 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.server_http_port = ::std::option::Option::Some(tmp);
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -609,6 +636,9 @@ impl ::protobuf::Message for ProxyNode {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
+        if let Some(v) = self.server_http_port {
+            my_size += ::protobuf::rt::value_size(9, v, ::protobuf::wire_format::WireTypeVarint);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -642,6 +672,9 @@ impl ::protobuf::Message for ProxyNode {
             os.write_tag(8, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
+        }
+        if let Some(v) = self.server_http_port {
+            os.write_uint32(9, v)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -693,6 +726,7 @@ impl ::protobuf::Clear for ProxyNode {
         self.client_platform_category.clear();
         self.symmetric_crypto_info.clear();
         self.asymmetric_crypto_info.clear();
+        self.server_http_port = ::std::option::Option::None;
         self.unknown_fields.clear();
     }
 }

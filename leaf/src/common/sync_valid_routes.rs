@@ -88,8 +88,16 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
     // trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config)?);
 
     let client = reqwest::Client::new();
-    // todo : http 端口
-    let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), 19802);
+
+    let http_port = match &proxy_node.server_http_port {
+        None => {
+            push_error(change_password_error, "http_port is required".to_owned());
+            19802
+        }
+        Some(a) => { a.clone()}
+    };
+
+    let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), http_port);
 
 
     // let mock_server_hex = "3082013602200ba27589b1851c1921e960510217b5f96841ca9acfe31c89f6110e9063465c2f022100877547fb71ad6890819ca43a6dce6190c95ba2e91262644a47dd7d112a8d226f04206668dabd009021becbe5518750e49c9964454eaa89d3f3f6ca822160b15f690e0481cc0ae0a03e57902125c3d603e297b07d7034a7485a6e0971f33c390e69948dd75cb2f4154d5829e26c7eee955d8bda7b4c9f83599cec323c523c7cae11fc447ad21a886befb08da03f93d79d93c7e787c9ed5d9bf58745db3d12ed8ec1568beeb53879c36a7f6454627ca7a076146a18c2eb8395e9b15b5e57dd61ddf78eceaec9b9ef16a57cf864ae390adb0825ea3dd9ee32e6a247af67db336552ab294a9b1cefe74b7a40995c09fc2b9a9c9b9baeff1b348132e74245e9034799d5db549443b087109411238dc6b24e0de5";
@@ -100,10 +108,10 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         .json(&global_config)
         .send()
         .await.map_err(|error| {
-        error!("serde_json::from_str(PasswordResponse) error,{}", error);
-        push_error(change_password_error, "解析服务端返回结果失败".to_string());
-        error
-    })?;
+            error!("serde_json::from_str(PasswordResponse) error,{}", error);
+            push_error(change_password_error, "解析服务端返回结果失败".to_string());
+            error
+        })?;
     // trace!("exchange_password_by_http 2: send proxy server succeeded");
     let res =res.text().await?;
     // trace!("exchange_password_by_http2: response:{}", &res);
