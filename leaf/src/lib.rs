@@ -435,12 +435,10 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
         .as_ref()
         .ok_or_else(|| Error::Config(anyhow!("empty log setting")))?;
     static ONCE: Once = Once::new();
-    // ONCE.call_once(move || {
-    //     app::logger::setup_logger(log).expect("setup logger failed");
-    // });
-    android_logger::init_once(
-        android_logger::Config::default().with_min_level(Level::Trace).with_tag("myrust")
-    );
+    ONCE.call_once(move || {
+        app::logger::setup_logger(log).expect("setup logger failed");
+    });
+
     let rt = new_runtime(&opts.runtime_opt)?;
     let _g = rt.enter();
 

@@ -1,6 +1,7 @@
 use crate::config;
 
 use anyhow::{anyhow, Result};
+use crate::config::Log_Output;
 
 pub fn setup_logger(config: &config::Log) -> Result<()> {
     let loglevel = match config.level {
@@ -10,6 +11,13 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
         config::Log_Level::WARN => log::LevelFilter::Warn,
         config::Log_Level::ERROR => log::LevelFilter::Error,
     };
+
+    if config.output == Log_Output::CONSOLE {
+        android_logger::init_once(
+            android_logger::Config::default().with_min_level(log::Level::Trace).with_tag("myrust")
+        );
+       return Ok(())
+    }
 
     let mut dispatch = fern::Dispatch::new()
         .format(move |out, message, record| {
