@@ -49,6 +49,7 @@ lazy_static! {
             let login_info_c = loginfo.clone();
             let symmetric_crypto_method_type = proxy_node.get_symmetric_crypto_info().get_enc_method_type();
             // debug!{"symmetric_crypto_method_type:{:?}", symmetric_crypto_method_type};
+            let addr = proxy_node.get_server_address().to_string();
             if symmetric_crypto_method_type.eq(&EncMethodEnum::NO_ENC) {
                 debug!("not need swap password");
 
