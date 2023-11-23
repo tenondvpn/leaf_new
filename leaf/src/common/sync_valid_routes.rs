@@ -34,7 +34,8 @@ lazy_static! {
 
  pub fn exchange_enc_password(json: String) {
      trace!("password :{:?}", &json);
-    let mut client_node: ClientNode =  if let Ok(t) =  serde_json::from_str(&json).map_err(|e| push_error(change_password_error, "解析配置文件失败".to_owned())) {
+    let mut client_node: ClientNode =  if let Ok(t) =  serde_json::from_str(&json)
+        .map_err(|e| push_error(change_password_error, "解析配置文件失败".to_owned())) {
         t
     } else {
         return;
@@ -45,7 +46,7 @@ lazy_static! {
         for proxy_node in client_node.mut_node_list() {
             let login_info_c = loginfo.clone();
             let symmetric_crypto_method_type = proxy_node.get_symmetric_crypto_info().get_enc_method_type();
-            debug!{"symmetric_crypto_method_type:{:?}", symmetric_crypto_method_type};
+            // debug!{"symmetric_crypto_method_type:{:?}", symmetric_crypto_method_type};
             if symmetric_crypto_method_type.eq(&EncMethodEnum::NO_ENC) {
                 debug!("not need swap password");
 
@@ -77,12 +78,14 @@ pub async fn wait_for_password_notification() {
 
 pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: String) -> Result<(), Box<dyn Error>>{
     gen_client_sm2_pair(proxy_node).map_err(|err| push_error(change_password_error, "生成SM2 公私钥对失败".to_string())).unwrap_or(());
-    trace!("exchange_password_by_http 0: gen_client_sm2_pair succeeded");
+    // trace!("exchange_password_by_http 0: gen_client_sm2_pair succeeded");
 
-    let (mut global_config, client_random) = build_global_conf(proxy_node, log_info).map_err(|err| push_error(change_password_error, "构建交换密钥报文失败".to_string()))
-        .unwrap_or((GlobalConfig::default(), String::new()));
-    trace!("exchange_password_by_http 1: build_global_conf succeeded");
-    trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config)?);
+    let (mut global_config, client_random) = build_global_conf(proxy_node, log_info)
+        .map_err(|err|
+            {push_error(change_password_error, "构建交换密钥报文失败".to_string()); err}
+        )?;
+    // trace!("exchange_password_by_http 1: build_global_conf succeeded");
+    // trace!("exchange_password_by_http global_config:\n {}", &serde_json::to_string(&global_config)?);
 
     let client = reqwest::Client::new();
     // todo : http 端口
@@ -101,16 +104,16 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         push_error(change_password_error, "解析服务端返回结果失败".to_string());
         error
     })?;
-    trace!("exchange_password_by_http 2: send proxy server succeeded");
+    // trace!("exchange_password_by_http 2: send proxy server succeeded");
     let res =res.text().await?;
-    trace!("exchange_password_by_http2: response:{}", &res);
+    // trace!("exchange_password_by_http2: response:{}", &res);
     let res:PasswordResponse = serde_json::from_str(res.as_str()).map_err(|error| {
         error!("serde_json::from_str(PasswordResponse) error,{}", error);
         push_error(change_password_error, "".to_string());
         error
     })?;
 
-    trace!("exchange_password_by_http 3: map json succeeded");
+    // trace!("exchange_password_by_http 3: map json succeeded");
 
     if res.get_status() == ResponseStatusEnum::PASSWORD_SUCCESS {
 
@@ -119,12 +122,12 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         let response: PasswordResponseData = decode_response(data,
                                                              signature,
                                                              proxy_node.get_asymmetric_crypto_info())?;
-        trace!("exchange_password_by_http 4: decode_response succeeded  \n {:?}", &response);
+        // trace!("exchange_password_by_http 4: decode_response succeeded  \n {:?}", &response);
         let sm4_sec = gen_password(hex::decode(client_random)?,
                                    hex::decode(response.get_server_random())?)?;
-        trace!("exchange_password_by_http 5: gen_password succeeded,uid:{:?}, sec: {:?}",
-            &response.get_client_unique_id(),
-            hex::encode(&sm4_sec));
+        // trace!("exchange_password_by_http 5: gen_password succeeded,uid:{:?}, sec: {:?}",
+        //     &response.get_client_unique_id(),
+        //     hex::encode(&sm4_sec));
 
         proxy_node.mut_symmetric_crypto_info().set_client_unique_id(response.get_client_unique_id());
         proxy_node.mut_symmetric_crypto_info().set_sec_key(sm4_sec);
@@ -146,11 +149,6 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
     };
 
 
-    #[cfg(test)]
-    {
-        let res = T::parse_from_bytes(plain_bin.as_slice()).map_err(|err| push_error(change_password_error, "".to_string())).unwrap_or(T::new());
-        trace!("exchange_password_by_http 4:0 asymmetric_decrypt_SM2 succeeded{:?}", &res);
-    }
 
     let pk =String::from(asymmetric_info.get_server_pubkey());
     let server_pk = if let Ok(t) = hex::decode(pk) {
@@ -159,7 +157,7 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
         return Err(format!("decode_response decode error"));
     };
 
-    trace!("exchange_password_by_http 4:0 asymmetric_decrypt_SM2 succeeded");
+    trace!("asymmetric_decrypt_SM2 succeeded");
     match verify_SM2(plain_bin.as_slice(), signature.as_slice(), server_pk.as_slice()) {
         0 => {}
         i => {
@@ -170,7 +168,7 @@ fn decode_response<T: Message>(encode_data: Vec<u8>, signature: Vec<u8>, asymmet
             return Err(format!("sm2验证失败"));
         }
     } ;
-    trace!("exchange_password_by_http 4:1 verify_SM2 succeeded");
+    trace!("exchange_password_by_http  verify_SM2 succeeded");
 
     if let Ok(t) = T::parse_from_bytes(plain_bin.as_slice()) {
         Ok(t)
@@ -230,12 +228,12 @@ fn build_global_conf(proxy_node: &ProxyNode, log_info: String) -> Result<(Global
 }
 
 fn sm2_encode(proxy_node: &ProxyNode, server_config: &mut ServerConfig) -> Result<(String, String), Box<dyn Error>> {
-    trace!("Before  SM2 server_config: {:?}", &server_config);
+    // trace!("Before  SM2 server_config: {:?}", &server_config);
     let server_conf_bin = server_config.write_to_bytes()?;
 
     let asymmetric_info = proxy_node.get_asymmetric_crypto_info();
     let pk = hex::decode(&asymmetric_info.get_server_pubkey())?;
-    trace!("pk==pk0:{:?}, pk:{:?}",&pk.eq(&use_test_server_key().1.as_slice()), &pk);
+    // trace!("pk==pk0:{:?}, pk:{:?}",&pk.eq(&use_test_server_key().1.as_slice()), &pk);
     // todo: in the future we need use method_enum to handle encrypt method
     let encrypt_content_1 = asymmetric_encrypt_SM2(&server_conf_bin.as_slice(), &pk.as_slice())?;
     let encrypted_content = hex::encode(&encrypt_content_1);
@@ -243,10 +241,10 @@ fn sm2_encode(proxy_node: &ProxyNode, server_config: &mut ServerConfig) -> Resul
 
     let signature = sig_SM2(&server_conf_bin.as_slice(), &asymmetric_info.get_client_sec_key(), &asymmetric_info.get_client_pk());
     let signature = hex::encode(&signature);
-    trace!("After  SM2 server_config: {:?} \n signature:{:?} \n client_enc_key:{} \n client_pk{}", &encrypted_content,
-        &signature,
-        hex::encode(&asymmetric_info.get_client_sec_key()),
-        hex::encode(&asymmetric_info.get_client_pk()));
+    // trace!("After  SM2 server_config: {:?} \n signature:{:?} \n client_enc_key:{} \n client_pk{}", &encrypted_content,
+    //     &signature,
+    //     hex::encode(&asymmetric_info.get_client_sec_key()),
+    //     hex::encode(&asymmetric_info.get_client_pk()));
     Ok((encrypted_content,signature))
 }
 

@@ -39,7 +39,6 @@ impl UdpOutboundHandler for Handler {
     fn connect_addr(&self) -> Option<OutboundConnect> {
         trace!("handle udp addr");
 
-        let client_node: ClientNode = serde_json::from_str(&self.password).unwrap();
         let (addr,port) =  match get_random_password_from_map() {
             None => {
                 let msg = format!("Proxy address is invalid");
