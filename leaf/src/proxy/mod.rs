@@ -387,6 +387,7 @@ pub async fn connect_udp_outbound(
 ) -> io::Result<Option<AnyOutboundTransport>> {
     match UdpOutboundHandler::connect_addr(handler.as_ref()) {
         Some(OutboundConnect::Proxy(addr, port)) => {
+            debug!("connet udp  addr :{:?} to {:?}", &addr, &sess.destination);
             match UdpOutboundHandler::transport_type(handler.as_ref()) {
                 DatagramTransportType::Datagram => {
                     let socket = new_udp_socket(&sess.source).await?;
@@ -402,6 +403,7 @@ pub async fn connect_udp_outbound(
             }
         }
         Some(OutboundConnect::Direct) => {
+            debug!("connet direct udp to target :{:?}", &sess.destination);
             let socket = new_udp_socket(&sess.source).await?;
             let dest = match &sess.destination {
                 SocksAddr::Domain(domain, port) => {

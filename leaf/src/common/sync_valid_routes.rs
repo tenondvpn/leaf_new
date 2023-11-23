@@ -5,15 +5,17 @@ use std::ops::Deref;
 use std::sync::{Mutex, RwLock};
 use std::thread;
 use std::time::Duration;
+use futures_util::future::err;
 
 use futures_util::TryFutureExt;
 //use easy_http_request::DefaultHttpRequest;
 use lazy_static::lazy_static;
-use log::{debug, error, trace};
+use log::{debug, error, info, trace};
 use protobuf::Message;
 use rand::{Rng, RngCore, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
 use rand::seq::IteratorRandom;
+use tokio::io;
 use tokio::time::timeout;
 
 use third::zj_gm::sm::{asymmetric_decrypt_SM2, asymmetric_encrypt_SM2, generate_key_pair, sig_SM2, verify_SM2};
@@ -51,12 +53,14 @@ lazy_static! {
                 debug!("not need swap password");
 
             } else {
+                debug!("{:?} need swap password", &addr);
                 if let Err(e) = exchange_password_by_http(proxy_node, login_info_c).await {
-                    error!("failed to exchange password :{:?}", e);
-                    push_error(change_password_error, "交换密钥失败".to_owned())
+                    error!("{:?} failed to exchange password :{:?}",&addr, e);
+                    push_error(change_password_error, "交换密钥失败".to_owned());
+                    continue;
+                } else {
+                    debug!("{:?} exchange password success", &addr);
                 }
-                debug!("need swap password");
-
             }
             save_enc_2_cache(proxy_node);
         }
@@ -97,7 +101,7 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         Some(a) => { a.clone()}
     };
 
-    let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), http_port);
+    let url = format!("http://{}:{}/exchange", &proxy_node.get_server_address(), &http_port);
 
 
     // let mock_server_hex = "3082013602200ba27589b1851c1921e960510217b5f96841ca9acfe31c89f6110e9063465c2f022100877547fb71ad6890819ca43a6dce6190c95ba2e91262644a47dd7d112a8d226f04206668dabd009021becbe5518750e49c9964454eaa89d3f3f6ca822160b15f690e0481cc0ae0a03e57902125c3d603e297b07d7034a7485a6e0971f33c390e69948dd75cb2f4154d5829e26c7eee955d8bda7b4c9f83599cec323c523c7cae11fc447ad21a886befb08da03f93d79d93c7e787c9ed5d9bf58745db3d12ed8ec1568beeb53879c36a7f6454627ca7a076146a18c2eb8395e9b15b5e57dd61ddf78eceaec9b9ef16a57cf864ae390adb0825ea3dd9ee32e6a247af67db336552ab294a9b1cefe74b7a40995c09fc2b9a9c9b9baeff1b348132e74245e9034799d5db549443b087109411238dc6b24e0de5";
@@ -141,6 +145,8 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
         proxy_node.mut_symmetric_crypto_info().set_sec_key(sm4_sec);
     } else {
         push_error(change_password_error, "服务器返回交换密要信息失败".to_string());
+        error!("服务器返回交换密要信息失败:{:?} response:{:?} ", &proxy_node, &res);
+        return  Err(Box::new(io::Error::other("服务器返回交换密要信息失败")));
     };
     Ok(())
 }

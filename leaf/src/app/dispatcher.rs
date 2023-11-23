@@ -259,21 +259,21 @@ impl Dispatcher {
             match router.pick_route(&sess).await {
                 Ok(tag) => {
                     debug!(
-                        "picked route [{}] for {} -> {}",
+                        "picked udp route [{}] for {} -> {}",
                         tag, &sess.source, &sess.destination
                     );
                     tag.to_owned()
                 }
                 Err(err) => {
-                    trace!("pick route failed: {}", err);
+                    trace!("pick udp route failed: {}", err);
                     if let Some(tag) = self.outbound_manager.read().await.default_handler() {
                         debug!(
-                            "picked default route [{}] for {} -> {}",
+                            "picked default udp route [{}] for {} -> {}",
                             tag, &sess.source, &sess.destination
                         );
                         tag
                     } else {
-                        warn!("no handler found");
+                        warn!("no udp handler found");
                         return Err(io::Error::new(ErrorKind::Other, "no available handler"));
                     }
                 }

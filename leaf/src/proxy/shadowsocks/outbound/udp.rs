@@ -92,19 +92,19 @@ impl UdpOutboundHandler for Handler {
             _ => None,
         };
 
-        let vpn_ip = match  address.parse::<u32>() {
-            Ok(a) => {a}
-            Err(b) => {
-                error!{"{:?}", b};
-                return Err(io::Error::new(io::ErrorKind::Other, "invalid input"));
-            }
-        };
+        // let vpn_ip = match  address.parse::<u32>() {
+        //     Ok(a) => {a}
+        //     Err(b) => {
+        //         error!{"{:?}", b};
+        //         return Err(io::Error::new(io::ErrorKind::Other, "invalid input"));
+        //     }
+        // };
         Ok(Box::new(Datagram {
             dgram,
             socket,
             destination,
             server_addr,
-            vpn_ip: vpn_ip,
+            vpn_ip: 0,
             vpn_port: port as u16,
             pk_str: tmp_pk.to_string(),
             ver: tmp_ver.to_string(),

@@ -164,6 +164,7 @@ impl NatManager {
         client_ch_tx: Sender<UdpPacket>,
         guard: &mut MutexGuard<'a, SessionMap>,
     ) {
+        debug!("aaaa add_session");
         // Runs the lazy task for session cleanup job, this task will run only once.
         if let Some(task) = self.timeout_check_task.lock().await.take() {
             tokio::spawn(task);
