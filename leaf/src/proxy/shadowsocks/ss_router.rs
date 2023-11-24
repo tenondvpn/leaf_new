@@ -54,7 +54,7 @@ pub fn check_special_tag_in_stream(buf: &mut BytesMut) -> bool {
     match get_rout_data_from_buf(buf) {
         Ok(Some(data)) => {
             let msg = format!("consume_rout_data_from_buf aaaa response_data {:?}", data);
-            error!{"{msg}"};
+            debug!{"{msg}"};
             push_error(server_error, msg.to_string());
             true
         }
