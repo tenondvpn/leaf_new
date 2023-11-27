@@ -23,36 +23,6 @@ impl SM4Key {
     }
 }
 
-#[link(name = "gmssl")]
-extern "C" {
-    fn add(key: *const SM4Key, a: i32, b: i32, data: *mut i8, len: usize) -> i32;
-    fn sm4_set_encrypt_key(key: *mut SM4Key, raw_key: *const u8);
-    fn sm4_gcm_encrypt(
-        key: *const SM4Key,
-        iv: *const u8,
-        ivlen: usize,
-        aad: *const u8,
-        aadlen: usize,
-        in1: *const u8,
-        inlen: usize,
-        out: *const u8,
-        taglen: usize,
-        tag: *const u8,
-    ) -> i32;
-    fn sm4_gcm_decrypt(
-        key: *const SM4Key,
-        iv: *const u8,
-        ivlen: usize,
-        aad: *const u8,
-        aadlen: usize,
-        in1: *const u8,
-        inlen: usize,
-        tag: *const u8,
-        taglen: usize,
-        out: *const u8,
-    ) -> i32;
-}
-
 pub trait Cipher<N>: Sync + Send + Unpin
 where
     N: NonceSequence,
