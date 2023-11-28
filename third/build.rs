@@ -17,7 +17,7 @@ fn build_zj_sm() {
     let headers_path_str = headers_path.to_str().expect("Path is not a valid string");
     let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-    println!("os is :{}", os);
+    println!("os is :{} arch is {}", os, arch);
 
     if arch.eq("x86_64") && os.eq("android") {
         let trarget_lib_str = libdir_path.join("x86_64-linux-android");
