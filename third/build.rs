@@ -48,7 +48,7 @@ fn build_zj_sm() {
     }
 
     //if arch.eq("armv7") && os.eq("androideabi") {
-    if arch.startsWith("arm") {
+    if arch.starts_with("arm") {
         let trarget_lib_str = libdir_path.join("armv7-linux-androideabi");
         println!(
             "cargo:rustc-link-search={}",
