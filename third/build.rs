@@ -18,6 +18,7 @@ fn build_zj_sm() {
     let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     println!("os is :{} arch is {}", os, arch);
+    println!("cargo:rerun-if-changed={}", headers_path_str);
 
     if arch.eq("x86_64") && os.eq("android") {
         let trarget_lib_str = libdir_path.join("x86_64-linux-android");
@@ -91,6 +92,10 @@ fn build_zj_sm() {
         );
         println!("cargo:rustc-link-lib=smcrypto");
         println!("cargo:rustc-link-lib=gmp");
+    }
+
+    if os.eq("macos") {
+        return;
     }
 
     let bindings = bindgen::Builder::default()

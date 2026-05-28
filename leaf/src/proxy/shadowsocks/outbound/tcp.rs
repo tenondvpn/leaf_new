@@ -76,7 +76,7 @@ impl TcpOutboundHandler for Handler {
                 None => {
                     let msg = format!("Proxy address is None");
                     push_error(change_password_error, "".to_string());
-                    return Err(std::io::Error::other(msg));
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other, msg));
                 }
                 Some(a) => {a}
             }
@@ -85,7 +85,7 @@ impl TcpOutboundHandler for Handler {
             None => {
                 let msg = format!("Proxy address is invalid");
                 push_error(change_password_error, "".to_string());
-                return Err(std::io::Error::other(msg));
+                return Err(std::io::Error::new(std::io::ErrorKind::Other, msg));
             }
             Some(a) => a
         };

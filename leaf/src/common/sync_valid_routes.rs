@@ -147,7 +147,10 @@ pub async fn exchange_password_by_http(proxy_node: &mut ProxyNode, log_info: Str
     } else {
         push_error(change_password_error, "服务器返回交换密要信息失败".to_string());
         error!("服务器返回交换密要信息失败:{:?} response:{:?} ", &proxy_node, &res);
-        return  Err(Box::new(io::Error::other("服务器返回交换密要信息失败")));
+        return Err(Box::new(io::Error::new(
+            io::ErrorKind::Other,
+            "服务器返回交换密要信息失败",
+        )));
     };
     Ok(())
 }

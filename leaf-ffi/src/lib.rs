@@ -18,6 +18,8 @@ pub const ERR_SYNC_CHANNEL_RECV: i32 = 6;
 pub const ERR_RUNTIME_MANAGER: i32 = 7;
 /// No associated config file.
 pub const ERR_NO_CONFIG_FILE: i32 = 8;
+/// Password exchange error.
+pub const ERR_EXCHANGE_PASSWORD: i32 = 9;
 
 fn to_errno(e: leaf::Error) -> i32 {
     match e {
@@ -29,6 +31,7 @@ fn to_errno(e: leaf::Error) -> i32 {
         leaf::Error::AsyncChannelSend(..) => ERR_ASYNC_CHANNEL_SEND,
         leaf::Error::SyncChannelRecv(..) => ERR_SYNC_CHANNEL_RECV,
         leaf::Error::RuntimeManager => ERR_RUNTIME_MANAGER,
+        leaf::Error::ExchangePassword(..) => ERR_EXCHANGE_PASSWORD,
     }
 }
 
