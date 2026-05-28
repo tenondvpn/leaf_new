@@ -1,4 +1,15 @@
-use std::{ffi::CStr, os::raw::c_char};
+use std::{
+    ffi::{CStr, CString},
+    os::raw::c_char,
+    sync::Mutex,
+};
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref CLIENT_INFO: Mutex<String> = Mutex::new(String::new());
+    static ref CLIENT_INFO_HASH: Mutex<String> = Mutex::new(String::new());
+}
 
 /// No error.
 pub const ERR_OK: i32 = 0;
@@ -106,6 +117,52 @@ pub extern "C" fn leaf_run(rt_id: u16, config_path: *const c_char) -> i32 {
         ERR_OK
     } else {
         ERR_CONFIG_PATH
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn get_status() -> *mut c_char {
+    CString::new(leaf::get_status())
+        .unwrap_or_default()
+        .into_raw()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn free_status(s: *mut c_char) {
+    if !s.is_null() {
+        let _ = CString::from_raw(s);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn set_pk(s: *const c_char) {
+    if s.is_null() {
+        return;
+    }
+
+    if let Ok(value) = unsafe { CStr::from_ptr(s).to_str() } {
+        if let Ok(mut client_info) = CLIENT_INFO.lock() {
+            client_info.clear();
+            client_info.push_str(value);
+        }
+
+        if !value.is_empty() {
+            leaf::exchange_password(value.to_string());
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn set_pk_hash(s: *const c_char) {
+    if s.is_null() {
+        return;
+    }
+
+    if let Ok(value) = unsafe { CStr::from_ptr(s).to_str() } {
+        if let Ok(mut client_info_hash) = CLIENT_INFO_HASH.lock() {
+            client_info_hash.clear();
+            client_info_hash.push_str(value);
+        }
     }
 }
 

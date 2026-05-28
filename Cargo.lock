@@ -1340,6 +1340,7 @@ version = "0.1.0"
 dependencies = [
  "bindgen 0.57.0",
  "futures 0.3.21",
+ "lazy_static",
  "leaf",
  "tokio 1.17.0",
 ]
@@ -2560,8 +2561,12 @@ name = "third"
 version = "0.1.0"
 dependencies = [
  "bindgen 0.59.2",
+ "foreign-types",
  "hex",
+ "libc",
  "log 0.4.16",
+ "openssl",
+ "openssl-sys",
 ]
 
 [[package]]

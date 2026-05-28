@@ -77,7 +77,6 @@ fn build_zj_sm() {
         println!("cargo:rustc-link-lib=sm");
     }
 
-
     if arch.eq("x86_64") && os.eq("linux") {
         let trarget_lib_str = libdir_path.join("x86_64-linux");
 
@@ -94,7 +93,7 @@ fn build_zj_sm() {
         println!("cargo:rustc-link-lib=gmp");
     }
 
-    if os.eq("macos") {
+    if os.eq("macos") || os.eq("ios") {
         return;
     }
 
