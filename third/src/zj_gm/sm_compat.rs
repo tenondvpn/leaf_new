@@ -10,8 +10,9 @@ use openssl::ec::{EcGroup, EcKey, EcPoint, PointConversionForm};
 use openssl::error::ErrorStack;
 use openssl::md::Md;
 use openssl::nid::Nid;
-use openssl::pkey::{PKey, Private, Public};
+use openssl::pkey::{Id, PKey, Private, Public};
 use openssl::pkey_ctx::PkeyCtx;
+use openssl::symm::{decrypt_aead, encrypt_aead, Cipher};
 use openssl_sys as ffi;
 
 use super::bindings::{
@@ -19,9 +20,6 @@ use super::bindings::{
     signature_algorithm_t_SM2_SIGN, symmetric_cryptograph_t, symmetric_cryptograph_t_SM4,
 };
 
-const EVP_PKEY_ALG_CTRL: c_int = 0x1000;
-const EVP_PKEY_CTRL_SET1_ID: c_int = EVP_PKEY_ALG_CTRL + 11;
-const SM4_KEY_SCHEDULE: usize = 32;
 const SM3_IV: [u32; 8] = [
     0x7380_166f,
     0x4914_b2b9,
@@ -33,45 +31,13 @@ const SM3_IV: [u32; 8] = [
     0xb0fb_0e4e,
 ];
 
-#[repr(C)]
-struct Sm4Key {
-    rk: [u32; SM4_KEY_SCHEDULE],
-}
-
-type Block128 = unsafe extern "C" fn(*const c_uchar, *mut c_uchar, *const c_void);
-
-#[repr(C)]
-struct Gcm128Context {
-    _private: [u8; 0],
-}
-
 extern "C" {
-    fn EVP_PKEY_set_alias_type(pkey: *mut ffi::EVP_PKEY, type_: c_int) -> c_int;
     fn EVP_MD_CTX_set_pkey_ctx(ctx: *mut ffi::EVP_MD_CTX, pctx: *mut ffi::EVP_PKEY_CTX);
-    fn SM4_set_key(key: *const u8, ks: *mut Sm4Key) -> c_int;
-    fn SM4_encrypt(input: *const u8, output: *mut u8, ks: *const Sm4Key);
-    fn CRYPTO_gcm128_new(key: *mut c_void, block: Block128) -> *mut Gcm128Context;
-    fn CRYPTO_gcm128_setiv(ctx: *mut Gcm128Context, iv: *const u8, len: size_t);
-    fn CRYPTO_gcm128_aad(ctx: *mut Gcm128Context, aad: *const u8, len: size_t) -> c_int;
-    fn CRYPTO_gcm128_encrypt(
-        ctx: *mut Gcm128Context,
-        input: *const u8,
-        output: *mut u8,
-        len: size_t,
+    fn EVP_PKEY_CTX_set1_id(
+        ctx: *mut ffi::EVP_PKEY_CTX,
+        id: *const c_void,
+        len: c_int,
     ) -> c_int;
-    fn CRYPTO_gcm128_decrypt(
-        ctx: *mut Gcm128Context,
-        input: *const u8,
-        output: *mut u8,
-        len: size_t,
-    ) -> c_int;
-    fn CRYPTO_gcm128_finish(ctx: *mut Gcm128Context, tag: *const u8, len: size_t) -> c_int;
-    fn CRYPTO_gcm128_tag(ctx: *mut Gcm128Context, tag: *mut u8, len: size_t);
-    fn CRYPTO_gcm128_release(ctx: *mut Gcm128Context);
-}
-
-unsafe extern "C" fn sm4_block(input: *const c_uchar, output: *mut c_uchar, key: *const c_void) {
-    SM4_encrypt(input, output, key as *const Sm4Key);
 }
 
 fn bytes_from_ptr<'a, T>(ptr: *const T, len: size_t) -> Option<&'a [T]> {
@@ -122,10 +88,8 @@ fn pkey_from_public_ascii(public_key: &[u8]) -> Result<PKey<Public>, ErrorStack>
     let point = EcPoint::from_bytes(&group, &raw_public_key, &mut ctx)?;
     let ec_key = EcKey::from_public_key(&group, &point)?;
     let pkey = PKey::from_ec_key(ec_key)?;
-    unsafe {
-        if EVP_PKEY_set_alias_type(pkey.as_ptr(), ffi::EVP_PKEY_SM2) != 1 {
-            return Err(ErrorStack::get());
-        }
+    if pkey.id() != Id::SM2 {
+        return Err(ErrorStack::get());
     }
     Ok(pkey)
 }
@@ -139,10 +103,8 @@ fn pkey_from_private_ascii(private_key: &[u8]) -> Result<PKey<Private>, ErrorSta
     public_point.mul_generator(&group, &private_bn, &ctx)?;
     let ec_key = EcKey::from_private_components(&group, &private_bn, &public_point)?;
     let pkey = PKey::from_ec_key(ec_key)?;
-    unsafe {
-        if EVP_PKEY_set_alias_type(pkey.as_ptr(), ffi::EVP_PKEY_SM2) != 1 {
-            return Err(ErrorStack::get());
-        }
+    if pkey.id() != Id::SM2 {
+        return Err(ErrorStack::get());
     }
     Ok(pkey)
 }
@@ -176,22 +138,17 @@ fn set_sm2_id<T>(
     id: *const c_char,
     id_len: size_t,
 ) -> c_int {
-    let id_ptr = if id_len == 0 {
-        ptr::null_mut()
+    let id_ptr = if id.is_null() || id_len == 0 {
+        ptr::null()
     } else {
-        id as *mut c_void
+        id as *const c_void
     };
 
-    unsafe {
-        ffi::EVP_PKEY_CTX_ctrl(
-            ctx.as_ptr(),
-            -1,
-            -1,
-            EVP_PKEY_CTRL_SET1_ID,
-            id_len as c_int,
-            id_ptr,
-        )
-    }
+    unsafe { EVP_PKEY_CTX_set1_id(ctx.as_ptr(), id_ptr, id_len as c_int) }
+}
+
+fn sm4_gcm_cipher() -> Result<Cipher, ErrorStack> {
+    Cipher::from_nid(Nid::from_raw(1248)).ok_or_else(ErrorStack::get)
 }
 
 fn sm4_gcm_encrypt(
@@ -202,40 +159,21 @@ fn sm4_gcm_encrypt(
     iv: &[u8],
     aad: &[u8],
 ) -> c_int {
-    if key.len() != 16 || output.len() < input.len() {
+    if key.len() != 16 || output.len() < input.len() || tag.is_empty() {
         return 1;
     }
 
-    let mut sm4_key = Sm4Key {
-        rk: [0; SM4_KEY_SCHEDULE],
-    };
+    let result = (|| -> Result<Vec<u8>, ErrorStack> {
+        let cipher = sm4_gcm_cipher()?;
+        encrypt_aead(cipher, key, Some(iv), aad, input, tag)
+    })();
 
-    unsafe {
-        if SM4_set_key(key.as_ptr(), &mut sm4_key) != 1 {
-            return 1;
-        }
-
-        let ctx = CRYPTO_gcm128_new(&mut sm4_key as *mut _ as *mut c_void, sm4_block);
-        if ctx.is_null() {
-            return 1;
-        }
-
-        CRYPTO_gcm128_setiv(ctx, iv.as_ptr(), iv.len() as size_t);
-        let aad_status = CRYPTO_gcm128_aad(ctx, aad.as_ptr(), aad.len() as size_t);
-        let crypt_status = CRYPTO_gcm128_encrypt(
-            ctx,
-            input.as_ptr(),
-            output.as_mut_ptr(),
-            input.len() as size_t,
-        );
-        CRYPTO_gcm128_tag(ctx, tag.as_mut_ptr(), tag.len() as size_t);
-        CRYPTO_gcm128_release(ctx);
-
-        if aad_status == 0 && crypt_status == 0 {
+    match result {
+        Ok(encrypted) if encrypted.len() == input.len() => {
+            output[..encrypted.len()].copy_from_slice(&encrypted);
             0
-        } else {
-            1
         }
+        _ => 1,
     }
 }
 
@@ -251,36 +189,17 @@ fn sm4_gcm_decrypt(
         return 1;
     }
 
-    let mut sm4_key = Sm4Key {
-        rk: [0; SM4_KEY_SCHEDULE],
-    };
+    let result = (|| -> Result<Vec<u8>, ErrorStack> {
+        let cipher = sm4_gcm_cipher()?;
+        decrypt_aead(cipher, key, Some(iv), aad, input, tag)
+    })();
 
-    unsafe {
-        if SM4_set_key(key.as_ptr(), &mut sm4_key) != 1 {
-            return 1;
-        }
-
-        let ctx = CRYPTO_gcm128_new(&mut sm4_key as *mut _ as *mut c_void, sm4_block);
-        if ctx.is_null() {
-            return 1;
-        }
-
-        CRYPTO_gcm128_setiv(ctx, iv.as_ptr(), iv.len() as size_t);
-        let aad_status = CRYPTO_gcm128_aad(ctx, aad.as_ptr(), aad.len() as size_t);
-        let crypt_status = CRYPTO_gcm128_decrypt(
-            ctx,
-            input.as_ptr(),
-            output.as_mut_ptr(),
-            input.len() as size_t,
-        );
-        let finish_status = CRYPTO_gcm128_finish(ctx, tag.as_ptr(), tag.len() as size_t);
-        CRYPTO_gcm128_release(ctx);
-
-        if aad_status == 0 && crypt_status == 0 && finish_status == 0 {
+    match result {
+        Ok(decrypted) if decrypted.len() == input.len() => {
+            output[..decrypted.len()].copy_from_slice(&decrypted);
             0
-        } else {
-            1
         }
+        _ => 1,
     }
 }
 
